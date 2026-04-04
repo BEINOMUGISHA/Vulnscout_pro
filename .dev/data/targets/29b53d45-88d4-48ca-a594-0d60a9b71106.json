@@ -1,0 +1,54 @@
+{
+  "id": "29b53d45-88d4-48ca-a594-0d60a9b71106",
+  "url": "https://mobile-wallet.example.ug",
+  "base_url": "https://mobile-wallet.example.ug",
+  "name": "Mobile Wallet UG",
+  "description": "",
+  "target_type": "mobile_money",
+  "industry": "mobile_money",
+  "hostname": "mobile-wallet.example.ug",
+  "is_https": true,
+  "is_ea_target": true,
+  "tags": [],
+  "notes": "",
+  "openapi_spec_url": null,
+  "scope": {
+    "allowed_domains": [
+      "mobile-wallet.example.ug"
+    ],
+    "allowed_wildcard_domains": [],
+    "allowed_ip_ranges": [],
+    "allowed_url_prefixes": [
+      "https://mobile-wallet.example.ug"
+    ],
+    "excluded_paths": [],
+    "excluded_domains": [],
+    "authorised_by": "dev@vulnscout.local",
+    "authorised_at": "2026-03-18T11:17:32.375143+00:00"
+  },
+  "scan_config": {
+    "crawl_depth": 3,
+    "max_pages": 150,
+    "respect_robots_txt": true,
+    "rate_limit_rps": 12.0,
+    "enabled_checks": [
+      "sqli",
+      "xss",
+      "xxe",
+      "ssrf",
+      "idor",
+      "auth_bypass",
+      "misconfig",
+      "sensitive_data"
+    ],
+    "max_concurrent_detectors": 15,
+    "include_ea_context": true,
+    "min_severity": "low",
+    "js_render": false,
+    "api_fuzzing": false,
+    "high_concurrency": false,
+    "unthrottled": false
+  },
+  "created_at": "2026-03-18T11:17:32.375143+00:00",
+  "owner_id": "dev-guest"
+}

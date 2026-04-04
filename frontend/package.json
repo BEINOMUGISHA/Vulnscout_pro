@@ -1,0 +1,42 @@
+{
+  "name": "vulnscout-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
+    "@react-three/drei": "^9.122.0",
+    "@react-three/fiber": "^8.18.0",
+    "@supabase/supabase-js": "^2.100.1",
+    "@tailwindcss/postcss": "^4.2.1",
+    "autoprefixer": "^10.4.27",
+    "axios": "^1.13.6",
+    "clsx": "^2.1.1",
+    "decamelize": "^6.0.1",
+    "framer-motion": "^11.0.3",
+    "lucide-react": "^0.331.0",
+    "postcss": "^8.5.8",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-hook-form": "^7.71.2",
+    "react-router-dom": "^7.13.1",
+    "recharts": "^2.12.0",
+    "tailwind-merge": "^3.5.0",
+    "tailwindcss": "^4.2.1",
+    "three": "^0.183.2",
+    "url-search-params-polyfill": "^8.2.5"
+  },
+  "devDependencies": {
+    "@types/node": "^25.4.0",
+    "@types/react": "^18.2.55",
+    "@types/react-dom": "^18.2.19",
+    "@vitejs/plugin-react-swc": "^3.5.0",
+    "typescript": "^5.2.2",
+    "vite": "^5.1.0"
+  }
+}

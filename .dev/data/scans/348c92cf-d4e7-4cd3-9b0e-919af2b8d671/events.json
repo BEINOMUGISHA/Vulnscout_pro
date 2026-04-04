@@ -1,0 +1,23 @@
+[
+  {
+    "timestamp": "2026-03-27T15:16:54.657809+00:00",
+    "phase": "pending",
+    "message": "Scan started",
+    "level": "info",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-27T15:17:08.651448+00:00",
+    "phase": "detecting",
+    "message": "Phase started: detecting",
+    "level": "info",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-27T15:17:15.998300+00:00",
+    "phase": "complete",
+    "message": "Scan failed: Scan fe93db36-9300-43e0-a5fe-4742fa6eb93e failed: 'ScanProgress' object has no attribute 'total_endpoints'",
+    "level": "error",
+    "data": null
+  }
+]

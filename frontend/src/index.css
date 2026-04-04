@@ -1,0 +1,101 @@
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
+:root {
+  /* High-Performance Command Center Palette (HSL) */
+  --background: 240 10% 4%;
+  --foreground: 0 0% 98%;
+  
+  --card: 240 10% 6%;
+  --card-foreground: 0 0% 98%;
+  
+  --popover: 240 10% 4%;
+  --popover-foreground: 0 0% 98%;
+  
+  --primary: 217 91% 60%;
+  --primary-foreground: 0 0% 100%;
+  
+  --secondary: 240 5% 15%;
+  --secondary-foreground: 0 0% 98%;
+  
+  --muted: 240 5% 10%;
+  --muted-foreground: 240 5% 65%;
+  
+  --accent: 262 83% 58%;
+  --accent-foreground: 0 0% 98%;
+  
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 98%;
+
+  --border: 240 6% 12%;
+  --input: 240 6% 12%;
+  --ring: 217 91% 60%;
+
+  --radius: 0.5rem;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-foreground antialiased selection:bg-primary/30 selection:text-white;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-card/60 backdrop-blur-md border border-white/5;
+  }
+  
+  .neon-blue {
+    @apply shadow-[0_0_15px_rgba(59,130,246,0.3)] border-primary/40;
+  }
+  
+  .neon-red {
+    @apply shadow-[0_0_15px_rgba(239,68,68,0.3)] border-destructive/40;
+  }
+  
+  .neon-green {
+    @apply shadow-[0_0_15px_rgba(16,185,129,0.3)] border-success/40;
+  }
+
+  .cyber-grid {
+    background-image: radial-gradient(circle, rgba(59,130,246,0.05) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+
+  .tactical-grid {
+    background-image: 
+      linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .scanline {
+    width: 100%;
+    height: 100px;
+    z-index: 50;
+    pointer-events: none;
+    position: fixed;
+    top: 0;
+    background: linear-gradient(to bottom, 
+      transparent 0%, 
+      rgba(59, 130, 246, 0.03) 50%, 
+      transparent 100%);
+    animation: scanline 8s linear infinite;
+  }
+}
+
+@keyframes scanline {
+  0% { transform: translateY(-100vh); }
+  100% { transform: translateY(100vh); }
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(.8); opacity: 0.5; }
+  80%, 100% { transform: scale(1.2); opacity: 0; }
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 1.25s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+}
+

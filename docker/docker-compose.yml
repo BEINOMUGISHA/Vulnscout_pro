@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: vulnscout-pro:latest
+    container_name: vulnscout-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - vulnscout-data:/app/data
+      - ../logs:/app/logs
+    env_file:
+      - ../.env
+    environment:
+      - VULNSCOUT_ENVIRONMENT=production
+      - VULNSCOUT_DATA_DIR=/app/data
+    restart: unless-stopped
+
+volumes:
+  vulnscout-data:

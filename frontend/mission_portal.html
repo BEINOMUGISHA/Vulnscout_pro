@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VulnScout Pro - Intelligence Portal</title>
+    <style>
+        :root {
+            --bg: #0d0d0d;
+            --surface: #151515;
+            --border: #333333;
+            --text-main: #e0e0e0;
+            --text-muted: #888888;
+            --color-critical: #ff3333;
+            --color-high: #ff8e3c;
+            --color-medium: #f2c94c;
+            --color-low: #2d9cdb;
+            --color-fp: #666666;
+            --color-ok: #27ae60;
+            --color-active: #2f80ed;
+            --color-warn: #f2994a;
+            --font-mono: 'Consolas', 'Courier New', Courier, monospace;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            margin: 0;
+            padding: 10px;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: center;
+            line-height: 1.4;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1440px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        h1 { font-size: 18px; font-weight: 900; letter-spacing: -0.05em; text-transform: uppercase; font-style: italic; color: #fff; margin:0; }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 5px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            background: var(--surface);
+            padding: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex-grow: 1;
+        }
+
+        .input-group label {
+            font-size: 8px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: bold;
+        }
+
+        input, select, button {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 5px 8px;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            outline: none;
+        }
+
+        button {
+            font-family: var(--font-sans);
+            font-weight: bold;
+            background: var(--color-active);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: opacity 0.2s;
+        }
+        button:hover { opacity: 0.8; }
+        button:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 6px 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stat-label {
+            font-size: 9px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .stat-value {
+            font-size: 16px;
+            font-family: var(--font-mono);
+            font-weight: bold;
+        }
+
+        .pipeline-container {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .pipeline-phases {
+            display: flex;
+            justify-content: space-between;
+            font-size: 8px;
+            color: var(--text-muted);
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .phase-name { flex: 1; text-align: center; }
+        .phase-name.active { color: var(--color-active); }
+        .phase-name.done { color: var(--color-ok); }
+
+        .pipeline-bars { display: flex; gap: 4px; height: 3px; }
+        .phase-bar { flex: 1; background: var(--bg); border: 1px solid var(--border); position: relative; overflow: hidden; }
+        .phase-progress { position: absolute; top: 0; left: 0; height: 100%; width: 0%; background: var(--color-active); transition: width 0.3s; }
+        .phase-bar.done .phase-progress { width: 100%; background: var(--color-ok); }
+
+        .overall-progress-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 2px;
+        }
+
+        .overall-bar { flex-grow: 1; height: 2px; background: var(--bg); border: 1px solid var(--border); position: relative; }
+        .overall-fill { position: absolute; top: 0; left: 0; height: 100%; width: 0%; background: var(--text-main); transition: width 0.2s; }
+        .overall-text { font-family: var(--font-mono); font-size: 10px; width: 35px; text-align: right; font-weight: bold; }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 60% 40%;
+            gap: 10px;
+            height: calc(100vh - 190px);
+            min-height: 450px;
+        }
+
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        .panel.fullscreen {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 9999;
+            width: 100vw; height: 100vh;
+        }
+
+        .panel-header {
+            padding: 6px 12px;
+            border-bottom: 1px solid var(--border);
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            background: var(--bg);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .blinking-cursor { display: inline-block; width: 6px; height: 10px; background: var(--color-active); animation: blink 1s step-end infinite; vertical-align: middle; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        .log-container {
+            flex-grow: 1; padding: 10px; overflow-y: auto; font-family: var(--font-mono); font-size: 10.5px;
+            display: flex; flex-direction: column; gap: 4px; background: var(--bg); line-height: 1.3;
+        }
+
+        .log-line { display: flex; gap: 6px; }
+        .log-time { color: var(--text-muted); }
+        .log-module { width: 60px; text-align: right; font-weight: bold; color: var(--text-muted); }
+        .log-tag { width: 50px; text-align: center; font-weight: bold; }
+        .log-msg { flex-grow: 1; color: #bbb; }
+
+        .mod-ORCH { color: #f2994a; }
+        .mod-CRAWL { color: var(--color-active); }
+        .mod-DETECT { color: #bb86fc; }
+        .mod-VALID { color: var(--color-medium); }
+        .mod-SCORE { color: #03dac6; }
+        .tag-HIT { background: var(--color-critical); color: #000; padding: 0 2px; }
+        .tag-FP { background: var(--color-fp); color: #000; padding: 0 2px; }
+
+        .btn-fullscreen { background: transparent; border: 1px solid var(--border); color: var(--text-muted); font-size: 8px; padding: 1px 6px; cursor: pointer; }
+        .btn-fullscreen:hover { color: #fff; border-color: #666; }
+
+        .table-container { flex-grow: 1; overflow-y: auto; background: var(--bg); }
+        table { width: 100%; border-collapse: collapse; font-family: var(--font-sans); font-size: 11px; }
+        th { position: sticky; top: 0; background: var(--surface); color: var(--text-muted); text-transform: uppercase; font-size: 9px; text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+        td { padding: 8px 12px; border-bottom: 1px solid var(--border); font-family: var(--font-mono); }
+
+        .badge { display: inline-block; padding: 2px 4px; font-size: 9px; font-weight: bold; border: 1px solid; text-transform: uppercase; text-align: center; width: 60px; }
+        .badge.critical { color: var(--color-critical); border-color: var(--color-critical); background: rgba(255, 51, 51, 0.05); }
+        .badge.high { color: var(--color-high); border-color: var(--color-high); }
+        .badge.medium { color: var(--color-medium); border-color: var(--color-medium); }
+        .badge.low { color: var(--color-low); border-color: var(--color-low); }
+
+        .conf-bar-container { width: 40px; height: 3px; background: var(--border); display: inline-block; vertical-align: middle; margin-right: 4px; }
+        .conf-bar { height: 100%; }
+
+        /* Projection Mode HUD Layout */
+        body.projector {
+            padding: 40px;
+            background: radial-gradient(circle at center, #101010 0%, #000 100%);
+            overflow: hidden;
+        }
+        body.projector .controls, body.projector .header { display: none; }
+        body.projector .container { max-width: 100%; height: calc(100vh - 80px); gap: 20px; }
+        body.projector .stats-grid { gap: 20px; }
+        body.projector .stat-card { padding: 20px; border-width: 2px; height: 80px; }
+        body.projector .stat-value { font-size: 36px; }
+        body.projector .stat-label { font-size: 11px; }
+        body.projector .main-grid { height: auto; flex-grow: 1; grid-template-columns: 1fr 1fr; gap: 24px; }
+        body.projector .log-container { font-size: 14px; }
+        body.projector table { font-size: 14px; }
+        body.projector th { font-size: 11px; padding: 15px; }
+        body.projector .pipeline-container { padding: 20px; }
+
+        /* Scanline HUD Overlay */
+        body.projector::after {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.05), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.05));
+            background-size: 100% 3px, 3px 100%;
+            pointer-events: none;
+            z-index: 10000;
+        }
+
+        #btn-projector {
+            background: transparent;
+            border: 1px solid var(--color-warn);
+            color: var(--color-warn);
+        }
+
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: #333; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div>
+            <h1>VulnScout Pro</h1>
+            <div style="color: var(--text-muted); font-size: 10px; margin-top: 2px; font-family: var(--font-mono);">>> scan_orchestrator pipeline [production]</div>
+        </div>
+        <button id="btn-projector" style="font-size: 9px; padding: 4px 10px;">[ ENABLE PROJECTION ]</button>
+    </div>
+
+    <div class="controls">
+        <div class="input-group">
+            <label>Target URL</label>
+            <input type="text" id="target-url" value="https://api.fintech-demo.local" />
+        </div>
+        <div class="input-group" style="max-width: 200px;">
+            <label>Profile</label>
+            <select id="scan-profile">
+                <option value="quick">Quick (12 pgs)</option>
+                <option value="standard" selected>Standard (28 pgs)</option>
+                <option value="deep">Deep (52 pgs)</option>
+            </select>
+        </div>
+        <button id="btn-run" style="padding: 10px 15px;">INITIATE</button>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card"><span class="stat-label">Endpoints</span><span class="stat-value" id="val-endpoints">0</span></div>
+        <div class="stat-card"><span class="stat-label">Payloads</span><span class="stat-value" id="val-payloads">0</span></div>
+        <div class="stat-card"><span class="stat-label">Hits</span><span class="stat-value" id="val-hits" style="color:var(--color-critical)">0</span></div>
+        <div class="stat-card"><span class="stat-label">FPs</span><span class="stat-value" id="val-fps" style="color:var(--color-fp)">0</span></div>
+    </div>
+
+    <div class="pipeline-container">
+        <div class="pipeline-phases">
+            <div class="phase-name" id="label-scope">Scope</div>
+            <div class="phase-name" id="label-crawl">Crawl</div>
+            <div class="phase-name" id="label-detect">Detect</div>
+            <div class="phase-name" id="label-validate">Valid</div>
+            <div class="phase-name" id="label-score">Score</div>
+            <div class="phase-name" id="label-complete">Done</div>
+        </div>
+        <div class="pipeline-bars">
+            <div class="phase-bar" id="bar-scope"><div class="phase-progress" id="prog-scope"></div></div>
+            <div class="phase-bar" id="bar-crawl"><div class="phase-progress" id="prog-crawl"></div></div>
+            <div class="phase-bar" id="bar-detect"><div class="phase-progress" id="prog-detect"></div></div>
+            <div class="phase-bar" id="bar-validate"><div class="phase-progress" id="prog-validate"></div></div>
+            <div class="phase-bar" id="bar-score"><div class="phase-progress" id="prog-score"></div></div>
+        </div>
+        <div class="overall-progress-container">
+            <div class="overall-bar"><div class="overall-fill" id="overall-fill"></div></div>
+            <div class="overall-text" id="overall-text">0.0%</div>
+        </div>
+    </div>
+
+    <div class="main-grid">
+        <div class="panel" id="terminal-panel">
+            <div class="panel-header">
+                Console Stream
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button class="btn-fullscreen" id="btn-fullscreen">[ FULLSCREEN ]</button>
+                    <span>vsp.log <div class="blinking-cursor"></div></span>
+                </div>
+            </div>
+            <div class="log-container" id="log-feed"></div>
+        </div>
+        <div class="panel">
+            <div class="panel-header">Findings Ledger</div>
+            <div class="table-container">
+                <table id="findings-table">
+                    <thead>
+                        <tr><th>SEV</th><th>Vuln</th><th>Vector</th><th>CVSS</th><th>Conf</th></tr>
+                    </thead>
+                    <tbody id="findings-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Exclusive Mission Console Mode
+    document.getElementById('btn-fullscreen').addEventListener('click', function() {
+        const panel = document.getElementById('terminal-panel');
+        const container = document.querySelector('.container');
+        if (!panel.classList.contains('fullscreen')) {
+            panel.classList.add('fullscreen');
+            container.style.display = 'none';
+            document.body.style.padding = '0';
+            this.innerText = '[ EXIT CONSOLE ]';
+        } else {
+            panel.classList.remove('fullscreen');
+            container.style.display = 'flex';
+            document.body.style.padding = '10px';
+            this.innerText = '[ FULLSCREEN ]';
+        }
+    });
+
+    // Projector Mode Toggle
+    const btnProjector = document.getElementById('btn-projector');
+    btnProjector.addEventListener('click', () => {
+        document.body.classList.toggle('projector');
+        btnProjector.innerText = document.body.classList.contains('projector') ? '[ EXIT PROJECTION ]' : '[ ENABLE PROJECTION ]';
+    });
+
+    // Hotkey: Alt+P for Projector
+    window.addEventListener('keydown', (e) => {
+        if (e.altKey && e.key.toLowerCase() === 'p') {
+            btnProjector.click();
+        }
+    });
+
+    // --- Configuration & Simulation Logic ---
+    const PROFILES = {
+        quick: { pages: 12, duration: 25000, detectors: ['sqli', 'xss'], hits: 2, fps: 1, threads: 8 },
+        standard: { pages: 35, duration: 55000, detectors: ['sqli', 'xss', 'idor', 'misconfig'], hits: 5, fps: 2, threads: 24 },
+        deep: { pages: 75, duration: 90000, detectors: ['sqli', 'xss', 'idor', 'misconfig', 'ssrf', 'cmdi', 'xxe'], hits: 9, fps: 4, threads: 50 }
+    };
+
+    const PATH_TEMPLATES = ["/api/v1/users", "/api/v1/auth/token", "/admin/users/1", "/ussd/callback", "/graphql", "/api/v2/payments", "/profile/edit", "/login", "/register"];
+    const PARAM_TEMPLATES = ["id", "user_id", "token", "query", "account_id"];
+    const VULN_TEMPLATES = [
+        { name: "SQL Injection", min: 9.0, max: 10.0 },
+        { name: "SSRF via Webhook", min: 7.0, max: 9.5 },
+        { name: "Broken IDOR", min: 6.0, max: 8.5 },
+        { name: "Reflected XSS", min: 4.0, max: 6.5 }
+    ];
+
+    let state = null;
+    let mainTimer = null;
+    let logJitterTimer = null;
+
+    const UI = {
+        btnRun: document.getElementById('btn-run'),
+        inputs: { url: document.getElementById('target-url'), profile: document.getElementById('scan-profile') },
+        stats: { endpoints: document.getElementById('val-endpoints'), payloads: document.getElementById('val-payloads'), hits: document.getElementById('val-hits'), fps: document.getElementById('val-fps') },
+        bars: { scope: document.getElementById('prog-scope'), crawl: document.getElementById('prog-crawl'), detect: document.getElementById('prog-detect'), validate: document.getElementById('prog-validate'), score: document.getElementById('prog-score') },
+        barContainers: { scope: document.getElementById('bar-scope'), crawl: document.getElementById('bar-crawl'), detect: document.getElementById('bar-detect'), validate: document.getElementById('bar-validate'), score: document.getElementById('bar-score') },
+        labels: { scope: document.getElementById('label-scope'), crawl: document.getElementById('label-crawl'), detect: document.getElementById('label-detect'), validate: document.getElementById('label-validate'), score: document.getElementById('label-score'), complete: document.getElementById('label-complete') },
+        overallFill: document.getElementById('overall-fill'),
+        overallText: document.getElementById('overall-text'),
+        logFeed: document.getElementById('log-feed'),
+        findingsBody: document.getElementById('findings-body')
+    };
+
+    function logMsg(module, tag, msg) {
+        const line = document.createElement('div');
+        line.className = 'log-line';
+        const ts = new Date().toLocaleTimeString();
+        line.innerHTML = `<span class="log-time">[${ts}]</span> <span class="log-module mod-${module}">[${module}]</span> <span class="log-tag tag-${tag}">${tag}</span> <span class="log-msg">${msg}</span>`;
+        UI.logFeed.appendChild(line);
+        UI.logFeed.scrollTop = UI.logFeed.scrollHeight;
+    }
+
+    function renderTable() {
+        UI.findingsBody.innerHTML = '';
+        state.findings.sort((a,b) => b.cvss - a.cvss).forEach(f => {
+            const row = `<tr><td><span class="badge ${f.isHit ? getSeverity(f.cvss) : 'false'}">${f.isHit ? getSeverity(f.cvss) : 'FP'}</span></td><td>${f.name}</td><td>${f.param}</td><td>${f.cvss.toFixed(1)}</td><td>${f.conf}%</td></tr>`;
+            UI.findingsBody.innerHTML += row;
+        });
+    }
+
+    function getSeverity(c) { return c >= 9 ? 'critical' : c >= 7 ? 'high' : c >= 4 ? 'medium' : 'low'; }
+
+    function setPhase(p) {
+        state.phase = p;
+        ['scope', 'crawl', 'detect', 'validate', 'score', 'complete'].forEach((l, i) => {
+            if(UI.labels[l]) UI.labels[l].className = 'phase-name ' + (p == i+1 ? 'active' : p > i+1 ? 'done' : '');
+            if(UI.barContainers[l]) UI.barContainers[l].className = 'phase-bar ' + (p > i+1 ? 'done' : '');
+        });
+    }
+
+    function tick() {
+        if(!state.running) return;
+        let elapsed = Date.now() - state.startTime;
+        let progress = Math.min(100, (elapsed / state.profile.duration) * 100);
+        UI.overallFill.style.width = progress + '%';
+        UI.overallText.innerText = progress.toFixed(1) + '%';
+
+        if(progress >= 100) { state.running = false; logMsg('ORCH', 'DONE', 'Mission Complete.'); UI.btnRun.disabled = false; return; }
+        if(progress > 95) setPhase(5); else if(progress > 85) setPhase(4); else if(progress > 40) setPhase(3); else if(progress > 5) setPhase(2); else setPhase(1);
+
+        while(state.queue.length > 0 && state.queue[0].time <= elapsed) {
+            let ev = state.queue.shift();
+            if(ev.type == 'log') logMsg(ev.mod, ev.tag, ev.msg);
+            if(ev.type == 'hit') { state.stats.hits++; state.findings.push(ev.data); renderTable(); }
+            UI.stats.endpoints.innerText = state.stats.endpoints;
+            UI.stats.hits.innerText = state.stats.hits;
+        }
+        requestAnimationFrame(tick);
+    }
+
+    UI.btnRun.onclick = () => {
+        state = { running: true, startTime: Date.now(), profile: PROFILES[UI.inputs.profile.value], stats: { endpoints: 12, hits: 0 }, findings: [], queue: [
+            {time: 1000, type: 'log', mod: 'ORCH', tag: 'INFO', msg: 'Initiating Tactical Deployment...'},
+            {time: 3000, type: 'log', mod: 'CRAWL', tag: 'INFO', msg: 'Crawling assets...'},
+            {time: 8000, type: 'hit', data: {name: 'SQL Injection', param: 'password', cvss: 9.8, conf: 99, isHit: true}},
+            {time: 12000, type: 'log', mod: 'DETECT', tag: 'FIRE', msg: 'Firing payloads...'}
+        ]};
+        UI.btnRun.disabled = true;
+        tick();
+    };
+</script>
+</body>
+</html>

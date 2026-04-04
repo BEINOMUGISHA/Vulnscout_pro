@@ -1,0 +1,4 @@
+-r base.txt
+gunicorn==21.2.0
+uvloop==0.19.0 ; sys_platform != 'win32' and sys_platform != 'cygwin'
+httptools==0.6.1

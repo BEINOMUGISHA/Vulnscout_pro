@@ -1,0 +1,51 @@
+[
+  {
+    "timestamp": "2026-03-28T12:53:09.362620+00:00",
+    "phase": "pending",
+    "message": "Scan started",
+    "level": "info",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-28T12:53:31.993624+00:00",
+    "phase": "crawling",
+    "message": "Phase started: ScanPhase.CRAWLING",
+    "level": "info",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-28T12:53:41.842637+00:00",
+    "phase": "detecting",
+    "message": "Phase started: ScanPhase.DETECTING",
+    "level": "info",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-28T13:21:46.154503+00:00",
+    "phase": "validating",
+    "message": "Phase started: ScanPhase.VALIDATING",
+    "level": "info",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-28T13:22:56.646239+00:00",
+    "phase": "complete",
+    "message": "Phase started: ScanPhase.COMPLETE",
+    "level": "info",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-28T13:22:56.678633+00:00",
+    "phase": "complete",
+    "message": "Scan complete — 115 findings",
+    "level": "info",
+    "data": {
+      "critical": 18,
+      "high": 5,
+      "medium": 92,
+      "low": 0,
+      "informational": 0,
+      "total": 115
+    }
+  }
+]

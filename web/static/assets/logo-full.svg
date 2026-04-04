@@ -1,0 +1,9 @@
+<svg width="180" height="40" viewBox="0 0 180 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="40" height="40" rx="8" fill="#1C1917"/>
+  <path d="M20 8L31 14V22.5C31 28.5 26.5 33.5 20 35C13.5 33.5 9 28.5 9 22.5V14L20 8Z" fill="#F59E0B" fill-opacity="0.2" stroke="#F59E0B" stroke-width="2"/>
+  <circle cx="20" cy="20" r="5" stroke="#F59E0B" stroke-width="2"/>
+  <line x1="23.5" y1="23.5" x2="28" y2="28" stroke="#F59E0B" stroke-width="2" stroke-linecap="round"/>
+  
+  <text x="50" y="27" fill="white" style="font-family:sans-serif;font-weight:bold;font-size:18px">VulnScout</text>
+  <text x="145" y="27" fill="#F59E0B" style="font-family:sans-serif;font-weight:300;font-size:18px">Pro</text>
+</svg>
