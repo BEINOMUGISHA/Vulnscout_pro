@@ -1,0 +1,182 @@
+{
+  "id": "348c92cf-d4e7-4cd3-9b0e-919af2b8d671",
+  "owner_id": "dev-guest",
+  "team_id": null,
+  "target": {
+    "id": "77254178-a076-4e83-8cb0-813d649956f8",
+    "base_url": "https://www.supatips.com/",
+    "name": "www.supatips.com",
+    "description": "",
+    "target_type": "web_app",
+    "industry": "general",
+    "scope": {
+      "allowed_domains": [
+        "www.supatips.com"
+      ],
+      "allowed_wildcard_domains": [],
+      "allowed_ip_ranges": [],
+      "allowed_url_prefixes": [
+        "https://www.supatips.com/"
+      ],
+      "excluded_paths": [],
+      "excluded_domains": [],
+      "authorisation_token": null,
+      "authorised_by": "https://www.supatips.com/",
+      "authorised_at": "2026-03-27T15:16:54.477783+00:00",
+      "max_scan_depth": 3
+    },
+    "auth": {
+      "auth_type": "none",
+      "username": null,
+      "password": null,
+      "login_url": null,
+      "login_payload": null,
+      "bearer_token": null,
+      "api_key": null,
+      "api_key_header": "X-API-Key",
+      "cookies": {},
+      "session_headers": {},
+      "mfa_secret": null,
+      "macro_steps": []
+    },
+    "scan_config": {
+      "crawl_depth": 2,
+      "max_pages": 30,
+      "respect_robots_txt": true,
+      "user_agent": "VulnScout-Pro/1.0 (Authorised Security Scanner)",
+      "follow_redirects": true,
+      "rate_limit_rps": 2.0,
+      "rate_limit_burst": 24,
+      "enabled_checks": [
+        "sqli",
+        "xss",
+        "misconfig",
+        "sensitive_data"
+      ],
+      "max_concurrent_detectors": 15,
+      "include_ea_context": true,
+      "js_render": false,
+      "api_fuzzing": false,
+      "high_concurrency": false,
+      "unthrottled": false,
+      "min_severity": "low",
+      "include_informational": false,
+      "scope": {
+        "allowed_domains": [
+          "www.supatips.com"
+        ],
+        "allowed_wildcard_domains": [],
+        "allowed_ip_ranges": [],
+        "allowed_url_prefixes": [
+          "https://www.supatips.com/"
+        ],
+        "excluded_paths": [],
+        "excluded_domains": [],
+        "authorisation_token": null,
+        "authorised_by": "https://www.supatips.com/",
+        "authorised_at": "2026-03-27T15:16:54.477783+00:00",
+        "max_scan_depth": 3
+      }
+    },
+    "tags": [],
+    "custom_headers": {},
+    "notes": "",
+    "openapi_spec_url": null,
+    "openapi_spec_path": null,
+    "created_at": "2026-03-27T15:16:54.477783+00:00"
+  },
+  "config": {
+    "crawl_depth": 2,
+    "max_pages": 30,
+    "respect_robots_txt": true,
+    "user_agent": "VulnScout-Pro/1.0 (Authorised Security Scanner)",
+    "follow_redirects": true,
+    "rate_limit_rps": 2.0,
+    "rate_limit_burst": 24,
+    "enabled_checks": [
+      "sqli",
+      "xss",
+      "misconfig",
+      "sensitive_data"
+    ],
+    "max_concurrent_detectors": 15,
+    "include_ea_context": true,
+    "js_render": false,
+    "api_fuzzing": false,
+    "high_concurrency": false,
+    "unthrottled": false,
+    "min_severity": "low",
+    "include_informational": false,
+    "scope": {
+      "allowed_domains": [
+        "www.supatips.com"
+      ],
+      "allowed_wildcard_domains": [],
+      "allowed_ip_ranges": [],
+      "allowed_url_prefixes": [
+        "https://www.supatips.com/"
+      ],
+      "excluded_paths": [],
+      "excluded_domains": [],
+      "authorisation_token": null,
+      "authorised_by": "https://www.supatips.com/",
+      "authorised_at": "2026-03-27T15:16:54.477783+00:00",
+      "max_scan_depth": 3
+    }
+  },
+  "status": "failed",
+  "current_phase": "detecting",
+  "progress": 77.5,
+  "error": "Scan fe93db36-9300-43e0-a5fe-4742fa6eb93e failed: 'ScanProgress' object has no attribute 'total_endpoints'",
+  "findings": [],
+  "metrics": {
+    "pages_crawled": 0,
+    "endpoints_discovered": 0,
+    "forms_discovered": 0,
+    "parameters_discovered": 0,
+    "out_of_scope_blocked": 0,
+    "total_requests_sent": 0,
+    "total_payloads_tested": 0,
+    "detectors_run": 0,
+    "raw_findings": 0,
+    "confirmed_findings": 0,
+    "false_positives_suppressed": 0,
+    "duplicates_removed": 0,
+    "crawl_duration_seconds": 0.0,
+    "detection_duration_seconds": 0.0,
+    "validation_duration_seconds": 0.0,
+    "total_duration_seconds": 0.0,
+    "avg_response_time_ms": 0.0,
+    "peak_rps": 0.0,
+    "network_errors": 0,
+    "timeout_errors": 0,
+    "detector_errors": 0
+  },
+  "events": [
+    {
+      "timestamp": "2026-03-27T15:16:54.657809+00:00",
+      "phase": "pending",
+      "message": "Scan started",
+      "level": "info",
+      "data": null
+    },
+    {
+      "timestamp": "2026-03-27T15:17:08.651448+00:00",
+      "phase": "detecting",
+      "message": "Phase started: detecting",
+      "level": "info",
+      "data": null
+    },
+    {
+      "timestamp": "2026-03-27T15:17:15.998300+00:00",
+      "phase": "complete",
+      "message": "Scan failed: Scan fe93db36-9300-43e0-a5fe-4742fa6eb93e failed: 'ScanProgress' object has no attribute 'total_endpoints'",
+      "level": "error",
+      "data": null
+    }
+  ],
+  "scope_audit": [],
+  "created_at": "2026-03-27T15:16:54.478781+00:00",
+  "started_at": "2026-03-27T15:16:54.657809+00:00",
+  "completed_at": "2026-03-27T15:17:15.998300+00:00"
+}

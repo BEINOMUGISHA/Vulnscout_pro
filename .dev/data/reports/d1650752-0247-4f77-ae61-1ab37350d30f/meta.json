@@ -1,0 +1,23 @@
+{
+  "id": "d1650752-0247-4f77-ae61-1ab37350d30f",
+  "scan_id": "526cd797-0f52-410b-8a62-fe5058724c78",
+  "owner_id": "dev-guest",
+  "report_type": "technical",
+  "version": 1,
+  "scan_summary": null,
+  "overall_risk": null,
+  "executive_summary": null,
+  "findings": [],
+  "technical_sections": [],
+  "compliance": null,
+  "report_title": "VulnScout Pro Technical Security Assessment —  — 2026-03-18",
+  "generated_by": "VulnScout Pro",
+  "prepared_for": "",
+  "prepared_by": "VulnScout Dev Instance",
+  "confidentiality_notice": "CONFIDENTIAL — This report contains sensitive security findings. Distribute only to authorised personnel.",
+  "scope_statement": "",
+  "status": "failed",
+  "error": "type object 'ScanSummary' has no attribute 'from_dict'",
+  "exports": {},
+  "generated_at": "2026-03-18T10:48:20.968971+00:00"
+}

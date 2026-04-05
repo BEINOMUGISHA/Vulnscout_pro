@@ -1,0 +1,174 @@
+{
+  "id": "98fdea44-8c47-4648-b4f0-6e4ad4fc0030",
+  "owner_id": "dev-guest",
+  "team_id": null,
+  "target": {
+    "id": "be23f905-8249-452b-b685-b00a541b47c6",
+    "base_url": "https://www.hackthissite.org/",
+    "name": "www.hackthissite.org",
+    "description": "",
+    "target_type": "web_app",
+    "industry": "general",
+    "scope": {
+      "allowed_domains": [
+        "www.hackthissite.org"
+      ],
+      "allowed_wildcard_domains": [],
+      "allowed_ip_ranges": [],
+      "allowed_url_prefixes": [
+        "https://www.hackthissite.org/"
+      ],
+      "excluded_paths": [],
+      "excluded_domains": [],
+      "authorisation_token": null,
+      "authorised_by": "dev@vulnscout.local",
+      "authorised_at": "2026-03-31T05:22:32.617270+00:00",
+      "max_scan_depth": 3
+    },
+    "auth": {
+      "auth_type": "none",
+      "username": null,
+      "password": null,
+      "login_url": null,
+      "login_payload": null,
+      "bearer_token": null,
+      "api_key": null,
+      "api_key_header": "X-API-Key",
+      "cookies": {},
+      "session_headers": {},
+      "mfa_secret": null,
+      "macro_steps": []
+    },
+    "scan_config": {
+      "crawl_depth": 2,
+      "max_pages": 30,
+      "respect_robots_txt": true,
+      "user_agent": "VulnScout-Pro/1.0 (Authorised Security Scanner)",
+      "follow_redirects": true,
+      "rate_limit_rps": 2.0,
+      "rate_limit_burst": 24,
+      "enabled_checks": [
+        "sqli",
+        "xss",
+        "xxe",
+        "ssrf",
+        "idor",
+        "auth_bypass",
+        "misconfig",
+        "sensitive_data"
+      ],
+      "max_concurrent_detectors": 15,
+      "include_ea_context": true,
+      "js_render": false,
+      "api_fuzzing": false,
+      "high_concurrency": false,
+      "unthrottled": true,
+      "fast_mode": true,
+      "min_severity": "low",
+      "include_informational": false,
+      "scope": {
+        "allowed_domains": [
+          "www.hackthissite.org"
+        ],
+        "allowed_wildcard_domains": [],
+        "allowed_ip_ranges": [],
+        "allowed_url_prefixes": [
+          "https://www.hackthissite.org/"
+        ],
+        "excluded_paths": [],
+        "excluded_domains": [],
+        "authorisation_token": null,
+        "authorised_by": "dev@vulnscout.local",
+        "authorised_at": "2026-03-31T05:22:32.617270+00:00",
+        "max_scan_depth": 3
+      }
+    },
+    "tags": [],
+    "custom_headers": {},
+    "notes": "",
+    "openapi_spec_url": null,
+    "openapi_spec_path": null,
+    "created_at": "2026-03-31T05:22:32.617270+00:00"
+  },
+  "config": {
+    "crawl_depth": 2,
+    "max_pages": 30,
+    "respect_robots_txt": true,
+    "user_agent": "VulnScout-Pro/1.0 (Authorised Security Scanner)",
+    "follow_redirects": true,
+    "rate_limit_rps": 2.0,
+    "rate_limit_burst": 24,
+    "enabled_checks": [
+      "sqli",
+      "xss",
+      "xxe",
+      "ssrf",
+      "idor",
+      "auth_bypass",
+      "misconfig",
+      "sensitive_data"
+    ],
+    "max_concurrent_detectors": 15,
+    "include_ea_context": true,
+    "js_render": false,
+    "api_fuzzing": false,
+    "high_concurrency": false,
+    "unthrottled": true,
+    "fast_mode": true,
+    "min_severity": "low",
+    "include_informational": false,
+    "scope": {
+      "allowed_domains": [
+        "www.hackthissite.org"
+      ],
+      "allowed_wildcard_domains": [],
+      "allowed_ip_ranges": [],
+      "allowed_url_prefixes": [
+        "https://www.hackthissite.org/"
+      ],
+      "excluded_paths": [],
+      "excluded_domains": [],
+      "authorisation_token": null,
+      "authorised_by": "dev@vulnscout.local",
+      "authorised_at": "2026-03-31T05:22:32.617270+00:00",
+      "max_scan_depth": 3
+    }
+  },
+  "status": "running",
+  "current_phase": "pending",
+  "progress": 0.0,
+  "error": null,
+  "findings": [],
+  "active_detectors": [],
+  "findings_by_class": {},
+  "metrics": {
+    "pages_crawled": 0,
+    "endpoints_discovered": 0,
+    "forms_discovered": 0,
+    "parameters_discovered": 0,
+    "out_of_scope_blocked": 0,
+    "total_requests_sent": 0,
+    "total_payloads_tested": 0,
+    "detectors_run": 0,
+    "detector_tasks_total": 0,
+    "detector_tasks_done": 0,
+    "raw_findings": 0,
+    "confirmed_findings": 0,
+    "false_positives_suppressed": 0,
+    "duplicates_removed": 0,
+    "crawl_duration_seconds": 0.0,
+    "detection_duration_seconds": 0.0,
+    "validation_duration_seconds": 0.0,
+    "total_duration_seconds": 0.0,
+    "avg_response_time_ms": 0.0,
+    "peak_rps": 0.0,
+    "network_errors": 0,
+    "timeout_errors": 0,
+    "detector_errors": 0
+  },
+  "events": [],
+  "scope_audit": [],
+  "created_at": "2026-03-31T05:22:32.617270+00:00",
+  "started_at": null,
+  "completed_at": null
+}

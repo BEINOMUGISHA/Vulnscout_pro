@@ -1,0 +1,54 @@
+{
+  "id": "f832bfe2-fa80-4d8c-aef1-c3a939927d7a",
+  "url": "https://api.mpesa-sandbox.example.ke",
+  "base_url": "https://api.mpesa-sandbox.example.ke",
+  "name": "M-Pesa Sandbox",
+  "description": "",
+  "target_type": "web_app",
+  "industry": "banking",
+  "hostname": "api.mpesa-sandbox.example.ke",
+  "is_https": true,
+  "is_ea_target": true,
+  "tags": [],
+  "notes": "",
+  "openapi_spec_url": null,
+  "scope": {
+    "allowed_domains": [
+      "api.mpesa-sandbox.example.ke"
+    ],
+    "allowed_wildcard_domains": [],
+    "allowed_ip_ranges": [],
+    "allowed_url_prefixes": [
+      "https://api.mpesa-sandbox.example.ke"
+    ],
+    "excluded_paths": [],
+    "excluded_domains": [],
+    "authorised_by": "dev@vulnscout.local",
+    "authorised_at": "2026-03-18T10:48:18.937526+00:00"
+  },
+  "scan_config": {
+    "crawl_depth": 3,
+    "max_pages": 150,
+    "respect_robots_txt": true,
+    "rate_limit_rps": 12.0,
+    "enabled_checks": [
+      "sqli",
+      "xss",
+      "xxe",
+      "ssrf",
+      "idor",
+      "auth_bypass",
+      "misconfig",
+      "sensitive_data"
+    ],
+    "max_concurrent_detectors": 15,
+    "include_ea_context": true,
+    "min_severity": "low",
+    "js_render": false,
+    "api_fuzzing": false,
+    "high_concurrency": false,
+    "unthrottled": false
+  },
+  "created_at": "2026-03-18T10:48:18.937526+00:00",
+  "owner_id": "dev-guest"
+}

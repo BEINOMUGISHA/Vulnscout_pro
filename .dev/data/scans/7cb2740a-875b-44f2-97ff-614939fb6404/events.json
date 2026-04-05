@@ -1,0 +1,23 @@
+[
+  {
+    "timestamp": "2026-03-12T17:29:37.365319+00:00",
+    "phase": "pending",
+    "message": "Scan started",
+    "level": "info",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-12T17:29:37.711622+00:00",
+    "phase": "complete",
+    "message": "Scan complete — 0 findings",
+    "level": "info",
+    "data": {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0,
+      "informational": 0,
+      "total": 0
+    }
+  }
+]

@@ -1,0 +1,16 @@
+[
+  {
+    "timestamp": "2026-03-16T18:02:04.550647+00:00",
+    "phase": "pending",
+    "message": "Scan started",
+    "level": "info",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-16T18:02:04.596077+00:00",
+    "phase": "complete",
+    "message": "Scan failed: No module named 'tenacity'",
+    "level": "error",
+    "data": null
+  }
+]

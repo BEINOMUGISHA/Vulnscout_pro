@@ -1,0 +1,23 @@
+{
+  "id": "35a89465-fdcd-4ec7-9fba-37cee319cfae",
+  "scan_id": "c2d8e460-5948-4dd1-a338-f0e5dc4aa070",
+  "owner_id": "dev-guest",
+  "report_type": "technical",
+  "version": 1,
+  "scan_summary": null,
+  "overall_risk": null,
+  "executive_summary": null,
+  "findings": [],
+  "technical_sections": [],
+  "compliance": null,
+  "report_title": "VulnScout Pro Technical Security Assessment —  — 2026-03-18",
+  "generated_by": "VulnScout Pro",
+  "prepared_for": "",
+  "prepared_by": "VulnScout Dev Instance",
+  "confidentiality_notice": "CONFIDENTIAL — This report contains sensitive security findings. Distribute only to authorised personnel.",
+  "scope_statement": "",
+  "status": "failed",
+  "error": "OverallRiskRating.from_scan() takes 2 positional arguments but 3 were given",
+  "exports": {},
+  "generated_at": "2026-03-18T10:40:54.208355+00:00"
+}

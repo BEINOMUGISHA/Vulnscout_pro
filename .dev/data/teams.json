@@ -1,0 +1,72 @@
+[
+  {
+    "id": "d61d2344-4361-4ef9-8c39-7ef7502b5831",
+    "name": "Red Team Alpha",
+    "description": "Offensive ops unit",
+    "owner_id": "dev-guest",
+    "member_ids": [
+      "dev-guest"
+    ],
+    "created_at": "2026-03-18T08:47:40.945879+00:00"
+  },
+  {
+    "id": "f24a46eb-eedf-428a-a816-1d06d3163d64",
+    "name": "Red Team Alpha",
+    "description": "Offensive ops unit",
+    "owner_id": "dev-guest",
+    "member_ids": [
+      "dev-guest"
+    ],
+    "created_at": "2026-03-18T08:48:14.858957+00:00"
+  },
+  {
+    "id": "bd32d0e4-0666-4f96-8560-d4a53382fd45",
+    "name": "Red Team Alpha",
+    "description": "Offensive ops unit",
+    "owner_id": "dev-guest",
+    "member_ids": [
+      "dev-guest"
+    ],
+    "created_at": "2026-03-18T08:49:32.655697+00:00"
+  },
+  {
+    "id": "43421012-5cba-4fc9-89b8-79390b227bff",
+    "name": "Red Team Alpha",
+    "description": "Offensive ops unit",
+    "owner_id": "dev-guest",
+    "member_ids": [
+      "dev-guest"
+    ],
+    "created_at": "2026-03-22T12:49:11.379533+00:00"
+  },
+  {
+    "id": "23a5ad1a-eafa-4f40-8b42-41112ed9551d",
+    "name": "Red Team Alpha",
+    "description": "Offensive ops unit",
+    "owner_id": "dev-guest",
+    "member_ids": [
+      "dev-guest"
+    ],
+    "created_at": "2026-03-23T08:56:12.432149+00:00"
+  },
+  {
+    "id": "760956e9-2933-46ad-850b-043da1c7fbc6",
+    "name": "Red Team Alpha",
+    "description": "Offensive ops unit",
+    "owner_id": "dev-guest",
+    "member_ids": [
+      "dev-guest"
+    ],
+    "created_at": "2026-03-24T15:29:55.628465+00:00"
+  },
+  {
+    "id": "ea0107a1-2c56-42d5-9cbc-cfd6d37f1c20",
+    "name": "Red Team Alpha",
+    "description": "Offensive ops unit",
+    "owner_id": "dev-guest",
+    "member_ids": [
+      "dev-guest"
+    ],
+    "created_at": "2026-03-24T15:34:46.527477+00:00"
+  }
+]

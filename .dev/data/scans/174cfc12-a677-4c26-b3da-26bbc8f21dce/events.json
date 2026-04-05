@@ -1,0 +1,16 @@
+[
+  {
+    "timestamp": "2026-03-18T11:17:34.660225+00:00",
+    "phase": "pending",
+    "message": "Scan started",
+    "level": "info",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-18T11:17:35.290402+00:00",
+    "phase": "complete",
+    "message": "Scan cancelled by user",
+    "level": "warning",
+    "data": null
+  }
+]

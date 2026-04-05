@@ -1,0 +1,16 @@
+[
+  {
+    "timestamp": "2026-03-24T15:29:53.815202+00:00",
+    "phase": "pending",
+    "message": "Scan started",
+    "level": "info",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-24T15:29:53.854150+00:00",
+    "phase": "complete",
+    "message": "Scan failed: [WinError 5] Access is denied: 'C:\\\\Users\\\\beino\\\\Desktop\\\\vulnscout_pro\\\\.dev\\\\data\\\\scans\\\\a644cff2-64b1-4e31-bb8d-8e68da1b3478\\\\summary.tmp' -> 'C:\\\\Users\\\\beino\\\\Desktop\\\\vulnscout_pro\\\\.dev\\\\data\\\\scans\\\\a644cff2-64b1-4e31-bb8d-8e68da1b3478\\\\summary.json'",
+    "level": "error",
+    "data": null
+  }
+]

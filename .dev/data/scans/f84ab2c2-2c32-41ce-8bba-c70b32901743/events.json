@@ -1,0 +1,37 @@
+[
+  {
+    "timestamp": "2026-03-27T15:06:44.591367+00:00",
+    "phase": "pending",
+    "message": "Scan started",
+    "level": "info",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-27T15:06:44.683080+00:00",
+    "phase": "detecting",
+    "message": "Phase started: detecting",
+    "level": "info",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-27T15:06:55.665654+00:00",
+    "phase": "complete",
+    "message": "Phase started: complete",
+    "level": "info",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-27T15:06:55.729635+00:00",
+    "phase": "complete",
+    "message": "Scan complete — 0 findings",
+    "level": "info",
+    "data": {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0,
+      "informational": 0,
+      "total": 0
+    }
+  }
+]

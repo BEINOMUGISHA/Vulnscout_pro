@@ -1,0 +1,30 @@
+[
+  {
+    "timestamp": "2026-03-27T15:40:03.748251+00:00",
+    "phase": "pending",
+    "message": "Scan started",
+    "level": "info",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-27T15:40:17.267496+00:00",
+    "phase": "crawling",
+    "message": "Phase started: ScanPhase.CRAWLING",
+    "level": "info",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-27T15:40:22.618751+00:00",
+    "phase": "detecting",
+    "message": "Phase started: ScanPhase.DETECTING",
+    "level": "info",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-27T15:43:40.406300+00:00",
+    "phase": "validating",
+    "message": "Phase started: ScanPhase.VALIDATING",
+    "level": "info",
+    "data": null
+  }
+]

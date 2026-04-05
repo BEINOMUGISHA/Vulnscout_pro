@@ -1,0 +1,16 @@
+[
+  {
+    "timestamp": "2026-03-13T07:27:52.456082+00:00",
+    "phase": "pending",
+    "message": "Scan started",
+    "level": "info",
+    "data": null
+  },
+  {
+    "timestamp": "2026-03-13T07:32:11.970631+00:00",
+    "phase": "complete",
+    "message": "Scan failed: Scope violation: http://localhost:3000/static/dist — Host 'localhost' is in the always-excluded list",
+    "level": "error",
+    "data": null
+  }
+]
