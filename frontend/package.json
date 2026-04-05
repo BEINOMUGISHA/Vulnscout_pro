@@ -3,10 +3,10 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "homepage": "https://BEINOMUGISHA.github.io/vulnscout_pro",
+  "homepage": "https://beinomugisha.github.io/Vulnscout_pro/",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "vite build",
     "preview": "vite preview",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"

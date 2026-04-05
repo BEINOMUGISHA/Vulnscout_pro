@@ -26,11 +26,16 @@ from datetime import datetime, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, validator
 
 from api.dependencies import (
-    AuthenticatedUser, PaginationParams,
-    get_pagination, get_scan_store, require_analyst, require_auth, require_admin,
+    AuthenticatedUser,
+    PaginationParams,
+    get_pagination,
+    get_scan_store,
+    require_analyst,
+    require_auth,
+    require_admin,
 )
 from config import get_config
 
@@ -40,65 +45,76 @@ router = APIRouter()
 
 # ── Request / Response models ──────────────────────────────────────────────────
 
+
 class ScopeConfigRequest(BaseModel):
-    allowed_domains:           list[str] = []
-    allowed_wildcard_domains:  list[str] = []
-    allowed_ip_ranges:         list[str] = []
-    allowed_url_prefixes:      list[str] = []
-    excluded_paths:            list[str] = []
-    excluded_domains:          list[str] = []
-    authorised_by:             str | None = None
-    max_scan_depth:            int = Field(3, ge=1, le=10)
+    allowed_domains: list[str] = []
+    allowed_wildcard_domains: list[str] = []
+    allowed_ip_ranges: list[str] = []
+    allowed_url_prefixes: list[str] = []
+    excluded_paths: list[str] = []
+    excluded_domains: list[str] = []
+    authorised_by: str | None = None
+    max_scan_depth: int = Field(3, ge=1, le=10)
 
 
 class ScanConfigRequest(BaseModel):
-    crawl_depth:               int   = Field(3,   ge=1, le=10)
-    max_pages:                 int   = Field(150, ge=1, le=1000)
-    rate_limit_rps:            float = Field(3.0, ge=0.1, le=20.0)
-    rate_limit_burst:          int   = Field(8,   ge=1, le=50)
-    respect_robots_txt:        bool  = True
-    include_ea_context:        bool  = True
-    enabled_checks:            list[str] | None = None
-    max_concurrent_detectors:  int   = Field(5, ge=1, le=10)
+    crawl_depth: int = Field(3, ge=1, le=10)
+    max_pages: int = Field(150, ge=1, le=1000)
+    rate_limit_rps: float = Field(3.0, ge=0.1, le=20.0)
+    rate_limit_burst: int = Field(8, ge=1, le=50)
+    respect_robots_txt: bool = True
+    include_ea_context: bool = True
+    enabled_checks: list[str] | None = None
+    max_concurrent_detectors: int = Field(5, ge=1, le=10)
 
 
 class AuthConfigRequest(BaseModel):
-    auth_type:     str = Field("none", pattern="^(none|basic|bearer|api_key|session)$")
-    username:      str | None = None
-    password:      str | None = None
-    bearer_token:  str | None = None
-    api_key:       str | None = None
+    auth_type: str = Field("none", pattern="^(none|basic|bearer|api_key|session)$")
+    username: str | None = None
+    password: str | None = None
+    bearer_token: str | None = None
+    api_key: str | None = None
     api_key_header: str = "X-API-Key"
-    cookies:       dict = {}
+    cookies: dict = {}
 
 
 class CreateTargetRequest(BaseModel):
-    url:                str = Field(..., min_length=8, max_length=2048)
-    name:               str = Field("", max_length=200)
-    description:        str = Field("", max_length=1000)
-    industry:           str = Field("general", max_length=50)
-    tags:               list[str] = []
-    notes:              str = Field("", max_length=2000)
+    url: str = Field(..., min_length=8, max_length=2048)
+    name: str = Field("", max_length=200)
+    description: str = Field("", max_length=1000)
+    industry: str = Field("general", max_length=50)
+    tags: list[str] = []
+    notes: str = Field("", max_length=2000)
     include_subdomains: bool = False
-    authorised_by:      str = Field("", max_length=200)
-    scope:              ScopeConfigRequest | None = None
-    scan_config:        ScanConfigRequest | None = None
-    auth:               AuthConfigRequest | None = None
+    authorised_by: str = Field("", max_length=200)
+    scope: ScopeConfigRequest | None = None
+    scan_config: ScanConfigRequest | None = None
+    auth: AuthConfigRequest | None = None
 
-    @field_validator("url")
+    @validator("url")
     @classmethod
     def validate_url_format(cls, v):
         if not v.startswith(("http://", "https://")):
             raise ValueError("URL must start with http:// or https://")
         return v.rstrip("/")
 
-    @field_validator("industry")
+    @validator("industry")
     @classmethod
     def validate_industry(cls, v):
         valid = {
-            "general", "banking", "fintech", "mobile_money", "telecom",
-            "sacco", "microfinance", "government", "insurance", "e-commerce",
-            "healthcare", "education", "ngo",
+            "general",
+            "banking",
+            "fintech",
+            "mobile_money",
+            "telecom",
+            "sacco",
+            "microfinance",
+            "government",
+            "insurance",
+            "e-commerce",
+            "healthcare",
+            "education",
+            "ngo",
         }
         if v not in valid:
             raise ValueError(f"Industry must be one of: {sorted(valid)}")
@@ -106,16 +122,16 @@ class CreateTargetRequest(BaseModel):
 
 
 class TargetResponse(BaseModel):
-    target_id:   str
-    url:         str
-    name:        str
-    industry:    str
+    target_id: str
+    url: str
+    name: str
+    industry: str
     target_type: str
-    is_https:    bool
+    is_https: bool
     is_ea_target: bool
-    tags:        list[str]
-    created_at:  str
-    owner_id:    str
+    tags: list[str]
+    created_at: str
+    owner_id: str
 
     class Config:
         from_attributes = True
@@ -123,11 +139,12 @@ class TargetResponse(BaseModel):
 
 # ── Routes ─────────────────────────────────────────────────────────────────────
 
+
 @router.post("", status_code=201, summary="Create a new scan target")
 async def create_target(
-    body:       CreateTargetRequest,
-    user:       AuthenticatedUser = Depends(require_analyst),
-    scan_store = Depends(get_scan_store),
+    body: CreateTargetRequest,
+    user: AuthenticatedUser = Depends(require_analyst),
+    scan_store=Depends(get_scan_store),
 ):
     """
     Create a new target definition and validate the URL is in scope.
@@ -210,19 +227,17 @@ async def create_target(
     target_dict["owner_id"] = user.user_id
     await scan_store.save_target(target_dict)
 
-    logger.info(
-        "Target created: %s by user %s", target.base_url, user.user_id[:8]
-    )
+    logger.info("Target created: %s by user %s", target.base_url, user.user_id[:8])
     return {**target_dict, "target_id": target.id}
 
 
 @router.get("", summary="List targets")
 async def list_targets(
-    page:       PaginationParams = Depends(get_pagination),
-    search:     str | None   = Query(None, max_length=200),
-    industry:   str | None   = Query(None),
-    user:       AuthenticatedUser = Depends(require_auth),
-    scan_store = Depends(get_scan_store),
+    page: PaginationParams = Depends(get_pagination),
+    search: str | None = Query(None, max_length=200),
+    industry: str | None = Query(None),
+    user: AuthenticatedUser = Depends(require_auth),
+    scan_store=Depends(get_scan_store),
 ):
     """List targets owned by the authenticated user (admin sees all)."""
     owner_filter = None if user.is_admin else user.user_id
@@ -234,18 +249,18 @@ async def list_targets(
         limit=page.limit,
     )
     return {
-        "items":   targets,
+        "items": targets,
         "targets": targets,
-        "total":   total,
-        "page":    page.page,
-        "limit":   page.limit,
-        "pages":   (total + page.limit - 1) // page.limit if total else 0,
+        "total": total,
+        "page": page.page,
+        "limit": page.limit,
+        "pages": (total + page.limit - 1) // page.limit if total else 0,
     }
 
 
 @router.get("/validate", summary="Validate and fingerprint a URL")
 async def validate_target_url(
-    url:  str = Query(..., min_length=8, max_length=2048),
+    url: str = Query(..., min_length=8, max_length=2048),
     user: AuthenticatedUser = Depends(require_analyst),
 ):
     """
@@ -276,16 +291,17 @@ async def validate_target_url(
         scope_reason = str(exc)
 
     return {
-        "url":          url,
-        "is_https":     url.startswith("https://"),
+        "url": url,
+        "is_https": url.startswith("https://"),
         "is_ea_target": temp_target.is_ea_target,
-        "target_type":  temp_target.target_type,
-        "hostname":     temp_target.hostname,
+        "target_type": temp_target.target_type,
+        "hostname": temp_target.hostname,
         "industry_hint": temp_target.industry,
-        "scope_valid":   scope_ok,
-        "scope_reason":  scope_reason,
+        "scope_valid": scope_ok,
+        "scope_reason": scope_reason,
         "message": (
-            "URL is valid and in scope." if scope_ok
+            "URL is valid and in scope."
+            if scope_ok
             else f"URL is excluded from scanning: {scope_reason}"
         ),
     }
@@ -293,9 +309,9 @@ async def validate_target_url(
 
 @router.get("/{target_id}", summary="Get target detail")
 async def get_target(
-    target_id:  str,
-    user:       AuthenticatedUser = Depends(require_auth),
-    scan_store = Depends(get_scan_store),
+    target_id: str,
+    user: AuthenticatedUser = Depends(require_auth),
+    scan_store=Depends(get_scan_store),
 ):
     """Return target details by ID."""
     target = await scan_store.get_target(target_id)
@@ -308,10 +324,10 @@ async def get_target(
 
 @router.put("/{target_id}", summary="Update target metadata")
 async def update_target(
-    target_id:  str,
-    body:       CreateTargetRequest,
-    user:       AuthenticatedUser = Depends(require_analyst),
-    scan_store = Depends(get_scan_store),
+    target_id: str,
+    body: CreateTargetRequest,
+    user: AuthenticatedUser = Depends(require_analyst),
+    scan_store=Depends(get_scan_store),
 ):
     """Update name, description, tags, notes, or scan configuration."""
     existing = await scan_store.get_target(target_id)
@@ -321,11 +337,11 @@ async def update_target(
         raise HTTPException(403, "You do not own this target.")
 
     updates = {
-        "name":        body.name or existing.get("name"),
+        "name": body.name or existing.get("name"),
         "description": body.description,
-        "tags":        body.tags,
-        "notes":       body.notes,
-        "updated_at":  datetime.now(timezone.utc).isoformat(),
+        "tags": body.tags,
+        "notes": body.notes,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
     }
     if body.scan_config:
         updates["scan_config"] = body.scan_config.dict()
@@ -337,9 +353,9 @@ async def update_target(
 
 @router.delete("/{target_id}", status_code=204, summary="Delete target (admin)")
 async def delete_target(
-    target_id:  str,
-    user:       AuthenticatedUser = Depends(require_admin),
-    scan_store = Depends(get_scan_store),
+    target_id: str,
+    user: AuthenticatedUser = Depends(require_admin),
+    scan_store=Depends(get_scan_store),
 ):
     """Delete a target record. Admin only. Does not delete associated scans."""
     existing = await scan_store.get_target(target_id)
@@ -351,10 +367,10 @@ async def delete_target(
 
 @router.get("/{target_id}/scans", summary="List scans for a target")
 async def get_target_scans(
-    target_id:  str,
-    page:       PaginationParams = Depends(get_pagination),
-    user:       AuthenticatedUser = Depends(require_auth),
-    scan_store = Depends(get_scan_store),
+    target_id: str,
+    page: PaginationParams = Depends(get_pagination),
+    user: AuthenticatedUser = Depends(require_auth),
+    scan_store=Depends(get_scan_store),
 ):
     """Return all scans that used this target, most recent first."""
     target = await scan_store.get_target(target_id)
@@ -371,8 +387,8 @@ async def get_target_scans(
     )
     return {
         "target_id": target_id,
-        "scans":     scans,
-        "total":     total,
-        "page":      page.page,
-        "limit":     page.limit,
+        "scans": scans,
+        "total": total,
+        "page": page.page,
+        "limit": page.limit,
     }

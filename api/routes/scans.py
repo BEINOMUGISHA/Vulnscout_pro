@@ -39,9 +39,18 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Form, HTTPException, Query, Request, Response
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    Form,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+)
 from fastapi.responses import JSONResponse, StreamingResponse, RedirectResponse
-from pydantic import BaseModel, Field, model_validator, field_validator
+from pydantic import BaseModel, Field, validator, root_validator
 
 from api.dependencies import (
     AuthenticatedUser,
@@ -66,106 +75,126 @@ audit = logging.getLogger("vulnscout.audit")
 
 # ── Request / Response models ──────────────────────────────────────────────────
 
+
 class ScanRequest(BaseModel):
     """
     Scan submission payload.
     Either target_url (quick scan) or target_id (stored target) must be set.
     """
-    target_url:    str | None = Field(None, min_length=8, max_length=2048)
-    target_id:     str | None = None
+
+    target_url: str | None = Field(None, min_length=8, max_length=2048)
+    target_id: str | None = None
 
     # ── Scan tuning ──────────────────────────────────────────────────────────
-    crawl_depth:         int | None   = Field(None, ge=1, le=10)
-    max_pages:           int | None   = Field(None, ge=1, le=1000)
-    rate_limit_rps:      float | None = Field(None, ge=0.1, le=20.0)
-    include_ea_context:  bool | None  = None
-    enabled_checks:      list[str] | None = None
-    respect_robots_txt:  bool | None  = None
+    crawl_depth: int | None = Field(None, ge=1, le=10)
+    max_pages: int | None = Field(None, ge=1, le=1000)
+    rate_limit_rps: float | None = Field(None, ge=0.1, le=20.0)
+    include_ea_context: bool | None = None
+    enabled_checks: list[str] | None = None
+    respect_robots_txt: bool | None = None
 
     # ── Authentication (PRO) ──────────────────────────────────────────────────
-    auth_type:     str = Field("none", pattern="^(none|basic|bearer|session|macro)$")
+    auth_type: str = Field("none", pattern="^(none|basic|bearer|session|macro)$")
     auth_username: str | None = Field(None, max_length=200)
     auth_password: str | None = Field(None, max_length=500)
-    auth_token:    str | None = Field(None, max_length=4096)   # JWT / Bearer
-    auth_cookies:  str | None = Field(None, max_length=2048)   # raw cookie string
+    auth_token: str | None = Field(None, max_length=4096)  # JWT / Bearer
+    auth_cookies: str | None = Field(None, max_length=2048)  # raw cookie string
     # Macro login: list of steps [{url, method, payload, success_pattern}]
-    auth_macro:    list[dict[str, Any]] | None = None
+    auth_macro: list[dict[str, Any]] | None = None
 
     # ── Advanced discovery (PRO) ──────────────────────────────────────────────
-    target_arch:  str = Field("web_app", pattern="^(web_app|spa|rest|graphql)$")
+    target_arch: str = Field("web_app", pattern="^(web_app|spa|rest|graphql)$")
     scan_strategy: str = Field("standard", pattern="^(standard|aggressive|stealth)$")
-    js_render:    bool | None = None   # Execute JavaScript / headless browser
-    api_fuzzing:  bool | None = None   # Deep API parameter discovery
+    js_render: bool | None = None  # Execute JavaScript / headless browser
+    api_fuzzing: bool | None = None  # Deep API parameter discovery
 
     # ── Concurrency & Performance (PRO UNLOCKED) ──────────────────────────────
     high_concurrency: bool | None = None  # Unthrottled parallel engine
 
     # ── Authorisation (compliance) ────────────────────────────────────────────
-    authorised_by:       str = Field("", max_length=200)
+    authorised_by: str = Field("", max_length=200)
     authorisation_notes: str = Field("", max_length=1000)
 
     # ── Auto-report ───────────────────────────────────────────────────────────
-    auto_report:         bool = False
-    report_type:         str  = Field("technical", pattern="^(executive|technical|compliance)$")
-    report_prepared_for: str  = Field("", max_length=200)
+    auto_report: bool = False
+    report_type: str = Field("technical", pattern="^(executive|technical|compliance)$")
+    report_prepared_for: str = Field("", max_length=200)
 
-    @field_validator("target_url")
+    @validator("target_url")
     @classmethod
     def validate_target_url(cls, v):
         if v and not v.startswith(("http://", "https://")):
             raise ValueError("target_url must start with http:// or https://")
         return v
 
-    @field_validator("enabled_checks")
+    @validator("enabled_checks")
     @classmethod
     def validate_check_names(cls, v):
-        valid = {"sqli", "xss", "xxe", "ssrf", "idor", "auth_bypass",
-                 "misconfig", "sensitive_data", "graphql", "jwt", "rate_limit",
-                 "cms_deep", "weak_passwords", "llm"}
+        valid = {
+            "sqli",
+            "xss",
+            "xxe",
+            "ssrf",
+            "idor",
+            "auth_bypass",
+            "misconfig",
+            "sensitive_data",
+            "graphql",
+            "jwt",
+            "rate_limit",
+            "cms_deep",
+            "weak_passwords",
+            "llm",
+        }
         for item in v:
             if item not in valid:
                 raise ValueError(f"Unknown check: {item!r}. Valid: {sorted(valid)}")
         return v
 
-    @model_validator(mode='after')
-    def require_target(self) -> 'ScanRequest':
-        if not self.target_url and not self.target_id:
+    @root_validator
+    def require_target(cls, values):
+        if not values.get("target_url") and not values.get("target_id"):
             raise ValueError("Either target_url or target_id must be provided.")
-        return self
+        return values
 
 
 class ScanResponse(BaseModel):
-    id:         str
-    scan_id:    str
-    status:     str
+    id: str
+    scan_id: str
+    status: str
     target_url: str
     created_at: str
-    message:    str
+    message: str
 
 
 class FindingFilter(BaseModel):
-    severity:     str | None = None
-    vuln_type:    str | None = None
-    ea_only:      bool = False
+    severity: str | None = None
+    vuln_type: str | None = None
+    ea_only: bool = False
     payment_only: bool = False
-    min_cvss:     float | None = Field(None, ge=0.0, le=10.0)
-    confirmed:    bool | None = None
+    min_cvss: float | None = Field(None, ge=0.0, le=10.0)
+    confirmed: bool | None = None
 
 
 class PatchFindingRequest(BaseModel):
-    remediation_status: str | None = Field(None, pattern="^(open|fixed|verified|ignored)$")
-    assigned_to:        str | None = None
+    remediation_status: str | None = Field(
+        None, pattern="^(open|fixed|verified|ignored)$"
+    )
+    assigned_to: str | None = None
 
 
 # ── Scan submission ────────────────────────────────────────────────────────────
 
-@router.post("", status_code=202, response_model=ScanResponse, summary="Submit a new scan")
+
+@router.post(
+    "", status_code=202, response_model=ScanResponse, summary="Submit a new scan"
+)
 async def create_scan(
-    body:             ScanRequest,
-    request:          Request,
-    user:             AuthenticatedUser = Depends(check_scan_rate_limit),
-    scan_store        = Depends(get_scan_store),
-    detector_registry = Depends(get_detector_registry),
+    body: ScanRequest,
+    request: Request,
+    user: AuthenticatedUser = Depends(check_scan_rate_limit),
+    scan_store=Depends(get_scan_store),
+    detector_registry=Depends(get_detector_registry),
     active_scans: dict = Depends(get_active_scans),
 ):
     """
@@ -226,6 +255,7 @@ async def create_scan(
     # Apply authentication credentials
     if body.auth_type != "none":
         from core.models.target import AuthType, TargetAuth
+
         auth = TargetAuth(auth_type=body.auth_type)
         if body.auth_type == "basic":
             auth.username = body.auth_username
@@ -243,10 +273,7 @@ async def create_scan(
         target.auth = auth
 
     # ── Check concurrent scan limit ────────────────────────────────────────────
-    running = sum(
-        1 for t in active_scans.values()
-        if not t.done()
-    )
+    running = sum(1 for t in active_scans.values() if not t.done())
     if running >= config.scan.max_concurrent_scans:
         raise HTTPException(
             status_code=503,
@@ -295,7 +322,10 @@ async def create_scan(
 
     audit.info(
         "SCAN_STARTED scan_id=%s target=%s user_id=%s authorised_by=%s",
-        scan.id[:8], target.base_url, user.user_id[:8], scan._authorised_by,
+        scan.id[:8],
+        target.base_url,
+        user.user_id[:8],
+        scan._authorised_by,
     )
 
     return ScanResponse(
@@ -314,6 +344,7 @@ async def _resolve_target(body: ScanRequest, user: AuthenticatedUser, scan_store
     """Resolve ScanRequest to a Target model."""
     from core.models.target import Target
     from config import get_config
+
     config = get_config()
 
     if body.target_id:
@@ -334,17 +365,18 @@ async def _resolve_target(body: ScanRequest, user: AuthenticatedUser, scan_store
             authorised_by=body.authorised_by or user.email,
         )
         # Apply global scan defaults
-        target.scan_config.crawl_depth     = config.scan.crawl_depth
-        target.scan_config.max_pages       = config.scan.max_pages
-        target.scan_config.rate_limit_rps  = config.scan.rate_limit_rps
+        target.scan_config.crawl_depth = config.scan.crawl_depth
+        target.scan_config.max_pages = config.scan.max_pages
+        target.scan_config.rate_limit_rps = config.scan.rate_limit_rps
         target.scan_config.include_ea_context = config.scan.include_ea_context
-        target.scan_config.enabled_checks  = list(config.scan.enabled_checks)
+        target.scan_config.enabled_checks = list(config.scan.enabled_checks)
         return target
 
     raise HTTPException(422, "Either target_url or target_id must be provided.")
 
 
 # ── Async scan runner ──────────────────────────────────────────────────────────
+
 
 async def _run_scan(
     scan,
@@ -355,7 +387,7 @@ async def _run_scan(
     report_type: str,
     report_prepared_for: str,
     owner_id: str,
-    orchestrator_instance = None,
+    orchestrator_instance=None,
 ) -> None:
     """
     Async task that orchestrates the full scan lifecycle.
@@ -363,7 +395,7 @@ async def _run_scan(
     """
     try:
         from core.scanner.orchestrator import ScanOrchestrator
-        
+
         # 1. Update state to RUNNING immediately
         scan.mark_started()
         await scan_store.save_summary(scan)
@@ -376,7 +408,7 @@ async def _run_scan(
             nonlocal last_save_time
 
             # ── Phase advance ─────────────────────────────────────────────────
-            phase_changed = (scan.current_phase != progress_data.phase)
+            phase_changed = scan.current_phase != progress_data.phase
             if phase_changed:
                 scan.advance_phase(progress_data.phase)
 
@@ -403,6 +435,7 @@ async def _run_scan(
         async def on_finding(findings_list):
             from core.models.finding import Finding
             import copy
+
             for f in findings_list:
                 try:
                     finding = Finding.from_dict(copy.deepcopy(f))
@@ -413,22 +446,23 @@ async def _run_scan(
             await scan_store.save_summary(scan)
 
         if orchestrator_instance:
-             orchestrator = orchestrator_instance
-             orchestrator.progress_callback = on_progress
-             orchestrator.finding_callback = on_finding
+            orchestrator = orchestrator_instance
+            orchestrator.progress_callback = on_progress
+            orchestrator.finding_callback = on_finding
         else:
-             orchestrator = ScanOrchestrator(
+            orchestrator = ScanOrchestrator(
                 config=scan.config,
                 detector_registry=detector_registry,
                 progress_callback=on_progress,
-                finding_callback=on_finding
-             )
-        
+                finding_callback=on_finding,
+            )
+
         result = await orchestrator.run(scan.target)
 
         # Deserialize orchestrator findings (dicts) into Finding objects
         from core.models.finding import Finding
         import copy
+
         raw_findings = result.get("findings", [])
         for f in raw_findings:
             try:
@@ -440,8 +474,10 @@ async def _run_scan(
         # Update scan metrics from orchestrator stats
         stats = result.get("stats", {})
         by_sev = stats.get("by_severity", {})
-        scan.metrics.raw_findings       = len(raw_findings)
-        scan.metrics.confirmed_findings = sum(1 for f in scan.findings if getattr(f, "confirmed", True))
+        scan.metrics.raw_findings = len(raw_findings)
+        scan.metrics.confirmed_findings = sum(
+            1 for f in scan.findings if getattr(f, "confirmed", True)
+        )
 
         # 3. Mark as COMPLETE
         scan.mark_complete()
@@ -477,15 +513,22 @@ async def _run_scan(
         # Auto-generate report if requested
         if auto_report and scan.status == "complete":
             try:
-                await _auto_generate_report(scan, report_type, report_prepared_for, owner_id)
+                await _auto_generate_report(
+                    scan, report_type, report_prepared_for, owner_id
+                )
             except Exception as exc:
-                logger.error("Auto-report generation failed for scan %s: %s", scan.id[:8], exc)
+                logger.error(
+                    "Auto-report generation failed for scan %s: %s", scan.id[:8], exc
+                )
 
 
-async def _auto_generate_report(scan, report_type: str, prepared_for: str, owner_id: str) -> None:
+async def _auto_generate_report(
+    scan, report_type: str, prepared_for: str, owner_id: str
+) -> None:
     """Generate a report on scan completion. Errors propagate to the caller."""
     logger.info("Auto-generating %s report for scan %s", report_type, scan.id[:8])
     from reporting.builder import ReportBuilder
+
     builder = ReportBuilder(scan)
     await builder.build(
         report_type=report_type,
@@ -498,7 +541,7 @@ async def _auto_generate_report(scan, report_type: str, prepared_for: str, owner
 @router.get("/stats", summary="Get global scan statistics")
 async def get_global_stats(
     user: AuthenticatedUser = Depends(require_auth),
-    scan_store = Depends(get_scan_store),
+    scan_store=Depends(get_scan_store),
 ):
     """Return aggregated statistics for the dashboard."""
     return await scan_store.stats()
@@ -506,18 +549,18 @@ async def get_global_stats(
 
 @router.get("/findings/recent", summary="Get recent findings across all scans")
 async def get_recent_findings(
-    limit:  int = Query(5, ge=1, le=50),
-    user:   AuthenticatedUser = Depends(require_auth),
-    scan_store = Depends(get_scan_store),
+    limit: int = Query(5, ge=1, le=50),
+    user: AuthenticatedUser = Depends(require_auth),
+    scan_store=Depends(get_scan_store),
 ):
     """
     Load the most recent findings across all scans.
     This is used for the Global Intelligence Feed on the dashboard.
     """
     # 1. Get recent scans
-    scans, _ = await scan_store.list_scans(limit=10) # check last 10 scans
+    scans, _ = await scan_store.list_scans(limit=10)  # check last 10 scans
     all_recent = []
-    
+
     for s in scans:
         sid = s.get("id") or s.get("scan_id")
         findings = await scan_store.load_findings(sid)
@@ -525,7 +568,7 @@ async def get_recent_findings(
         for f in findings:
             f["target_url"] = s.get("target_url")
             all_recent.append(f)
-            
+
     # 2. Sort by timestamp (most recent first) and return top N
     # Assumes finding has 'discovered_at' field
     all_recent.sort(key=lambda x: x.get("discovered_at", ""), reverse=True)
@@ -534,12 +577,13 @@ async def get_recent_findings(
 
 # ── List / detail ──────────────────────────────────────────────────────────────
 
+
 @router.get("", summary="List scans")
 async def list_scans(
-    page:      PaginationParams = Depends(get_pagination),
-    filters:   ScanFilters      = Depends(get_scan_filters),
-    user:      AuthenticatedUser = Depends(require_auth),
-    scan_store = Depends(get_scan_store),
+    page: PaginationParams = Depends(get_pagination),
+    filters: ScanFilters = Depends(get_scan_filters),
+    user: AuthenticatedUser = Depends(require_auth),
+    scan_store=Depends(get_scan_store),
 ):
     """
     List scans with pagination and optional filters.
@@ -561,8 +605,7 @@ async def list_scans(
         if not s.get("target_url"):
             t = s.get("target") or {}
             s["target_url"] = (
-                t.get("base_url") or t.get("url") or
-                t.get("target_url") or ""
+                t.get("base_url") or t.get("url") or t.get("target_url") or ""
             )
         stats = s.get("stats") or {}
         if "total_findings" not in s:
@@ -576,28 +619,30 @@ async def list_scans(
     scans = [_normalize(s) for s in scans]
 
     return {
-        "items":  scans,
-        "scans":  scans,
-        "total":  total,
-        "page":   page.page,
-        "limit":  page.limit,
-        "pages":  (total + page.limit - 1) // page.limit if total else 0,
+        "items": scans,
+        "scans": scans,
+        "total": total,
+        "page": page.page,
+        "limit": page.limit,
+        "pages": (total + page.limit - 1) // page.limit if total else 0,
     }
 
 
 @router.get("/findings", summary="Get all findings across scans")
 async def list_all_findings(
-    severity:  str | None = Query(None, description="Filter by severity: critical, high, medium, low, info"),
-    page:      PaginationParams = Depends(get_pagination),
-    user:      AuthenticatedUser = Depends(require_auth),
-    scan_store = Depends(get_scan_store),
+    severity: str | None = Query(
+        None, description="Filter by severity: critical, high, medium, low, info"
+    ),
+    page: PaginationParams = Depends(get_pagination),
+    user: AuthenticatedUser = Depends(require_auth),
+    scan_store=Depends(get_scan_store),
 ):
     """
     List all findings across all user's scans (or all scans if admin).
     Returns paginated findings with filters.
     """
     owner_filter = None if user.is_admin else user.user_id
-    
+
     # Get all scans for this user
     scans, _ = await scan_store.list_scans(
         owner_id=owner_filter,
@@ -606,44 +651,51 @@ async def list_all_findings(
         offset=0,
         limit=10000,  # Get all scans
     )
-    
+
     # Aggregate findings from all scans
     all_findings = []
     for scan in scans:
-        scan_id = scan.get("id") or scan.get("scan_id") if isinstance(scan, dict) else scan.id
-        target_url = scan.get("target_url") if isinstance(scan, dict) else scan.target_url
-        
+        scan_id = (
+            scan.get("id") or scan.get("scan_id") if isinstance(scan, dict) else scan.id
+        )
+        target_url = (
+            scan.get("target_url") if isinstance(scan, dict) else scan.target_url
+        )
+
         findings = await scan_store.load_findings(scan_id)
         for finding in findings:
             # Handle both dict and object findings
             finding_severity = (
-                finding.get("severity", "").lower() if isinstance(finding, dict)
+                finding.get("severity", "").lower()
+                if isinstance(finding, dict)
                 else getattr(finding, "severity", "").lower()
             )
-            
+
             # Filter by severity if specified
             if severity and finding_severity != severity.lower():
                 continue
-            
+
             # Convert finding to dict
             if isinstance(finding, dict):
                 finding_dict = finding.copy()
             else:
-                finding_dict = finding.to_dict(include_evidence=False, include_remediation=False)
-            
-            finding_dict['scan_id'] = scan_id
-            finding_dict['target_url'] = target_url
+                finding_dict = finding.to_dict(
+                    include_evidence=False, include_remediation=False
+                )
+
+            finding_dict["scan_id"] = scan_id
+            finding_dict["target_url"] = target_url
             all_findings.append(finding_dict)
-    
+
     # Sort by CVSS (highest first)
-    all_findings.sort(key=lambda f: float(f.get('cvss_score', 0.0)), reverse=True)
-    
+    all_findings.sort(key=lambda f: float(f.get("cvss_score", 0.0)), reverse=True)
+
     # Paginate
     total = len(all_findings)
     start = page.offset
     end = start + page.limit
     paginated = all_findings[start:end]
-    
+
     return {
         "findings": paginated,
         "total": total,
@@ -655,11 +707,11 @@ async def list_all_findings(
 
 @router.get("/{scan_id}", summary="Get scan detail")
 async def get_scan(
-    scan_id:   str,
+    scan_id: str,
     include_findings: bool = Query(False, description="Include full findings list"),
-    user:      AuthenticatedUser = Depends(require_auth),
-    scan       = Depends(require_scan_access),
-    scan_store = Depends(get_scan_store),
+    user: AuthenticatedUser = Depends(require_auth),
+    scan=Depends(require_scan_access),
+    scan_store=Depends(get_scan_store),
 ):
     """
     Return full scan record including summary stats.
@@ -684,12 +736,12 @@ async def get_scan(
 
 @router.get("/{scan_id}/status", summary="Poll scan status")
 async def get_scan_status(
-    scan_id:    str,
-    stream:     bool = Query(False, description="Stream status via SSE"),
-    user:       AuthenticatedUser = Depends(require_auth),
-    scan        = Depends(require_scan_access),
+    scan_id: str,
+    stream: bool = Query(False, description="Stream status via SSE"),
+    user: AuthenticatedUser = Depends(require_auth),
+    scan=Depends(require_scan_access),
     active_scans: dict = Depends(get_active_scans),
-    scan_store  = Depends(get_scan_store),
+    scan_store=Depends(get_scan_store),
 ):
     """
     Lightweight status endpoint. Returns current phase, finding counts, eta.
@@ -706,25 +758,29 @@ async def get_scan_status(
 
     metrics = scan.metrics
     return {
-        "scan_id":        scan_id,
-        "status":         scan.status,
-        "phase":          scan.current_phase,
-        "is_running":     is_running,
-        "pages_crawled":  metrics.pages_crawled if metrics else 0,
+        "scan_id": scan_id,
+        "status": scan.status,
+        "phase": scan.current_phase,
+        "is_running": is_running,
+        "pages_crawled": metrics.pages_crawled if metrics else 0,
         "findings_so_far": len(scan.findings),
-        "critical_count": sum(1 for f in scan.findings if getattr(f, "severity", "") == "critical"),
-        "high_count":     sum(1 for f in scan.findings if getattr(f, "severity", "") == "high"),
+        "critical_count": sum(
+            1 for f in scan.findings if getattr(f, "severity", "") == "critical"
+        ),
+        "high_count": sum(
+            1 for f in scan.findings if getattr(f, "severity", "") == "high"
+        ),
         "duration_seconds": scan.duration_seconds,
-        "started_at":     scan.started_at,
-        "completed_at":   scan.completed_at,
-        "error":          scan.error,
+        "started_at": scan.started_at,
+        "completed_at": scan.completed_at,
+        "error": scan.error,
     }
 
 
 @router.get("/analytics/risk-score", summary="Get global risk analytics score")
 async def get_analytics_risk_score(
     user: AuthenticatedUser = Depends(require_auth),
-    scan_store = Depends(get_scan_store),
+    scan_store=Depends(get_scan_store),
 ):
     """
     Return the global risk score aggregated from all scans.
@@ -740,6 +796,7 @@ async def get_analytics_risk_score(
 
 def _sse_stream(scan_id: str, active_scans: dict, scan_store):
     """Return a streaming SSE response for real-time scan progress."""
+
     async def event_generator():
         last_finding_count = 0
         last_event_count = 0
@@ -753,7 +810,7 @@ def _sse_stream(scan_id: str, active_scans: dict, scan_store):
                 # Also load findings if the count changed to get the latest one
                 current_count = raw.get("finding_count", 0)
                 latest_finding = None
-                
+
                 if current_count > last_finding_count:
                     all_findings = await scan_store.load_findings(scan_id)
                     if all_findings:
@@ -763,9 +820,9 @@ def _sse_stream(scan_id: str, active_scans: dict, scan_store):
                             "title": f.get("title"),
                             "severity": f.get("severity"),
                             "vuln_type": f.get("vuln_type"),
-                            "target_url": raw.get("target_url")
+                            "target_url": raw.get("target_url"),
                         }
-                
+
                 new_findings = current_count - last_finding_count
                 last_finding_count = current_count
 
@@ -783,23 +840,25 @@ def _sse_stream(scan_id: str, active_scans: dict, scan_store):
                 else:
                     crawled = 0
 
-                event_data = json.dumps({
-                    "status":         raw.get("status", "running"),
-                    "phase":          raw.get("current_phase", "crawling"),
-                    "current_phase":  raw.get("current_phase", "crawling"),
-                    "progress":       progress_pct,
-                    "total_findings": current_count,
-                    "finding_count":  current_count,
-                    "new_findings":   new_findings,
-                    "latest_finding": latest_finding,
-                    "event":          latest_event,
-                    "pages_crawled":  crawled,
-                    "target_url":     raw.get("target_url", ""),
-                    "active_detectors": raw.get("active_detectors", []),
-                    "findings_by_class": raw.get("findings_by_class", {}),
-                    "critical_count": raw.get("critical_count", 0),
-                    "duration_s":    raw.get("duration_seconds"),
-                })
+                event_data = json.dumps(
+                    {
+                        "status": raw.get("status", "running"),
+                        "phase": raw.get("current_phase", "crawling"),
+                        "current_phase": raw.get("current_phase", "crawling"),
+                        "progress": progress_pct,
+                        "total_findings": current_count,
+                        "finding_count": current_count,
+                        "new_findings": new_findings,
+                        "latest_finding": latest_finding,
+                        "event": latest_event,
+                        "pages_crawled": crawled,
+                        "target_url": raw.get("target_url", ""),
+                        "active_detectors": raw.get("active_detectors", []),
+                        "findings_by_class": raw.get("findings_by_class", {}),
+                        "critical_count": raw.get("critical_count", 0),
+                        "duration_s": raw.get("duration_seconds"),
+                    }
+                )
                 yield f"data: {event_data}\n\n"
 
             except Exception as e:
@@ -825,13 +884,14 @@ def _sse_stream(scan_id: str, active_scans: dict, scan_store):
 
 # ── Cancel ─────────────────────────────────────────────────────────────────────
 
+
 @router.post("/{scan_id}/cancel", summary="Cancel a running scan")
 async def cancel_scan(
-    scan_id:      str,
-    user:         AuthenticatedUser = Depends(require_auth),
-    scan          = Depends(require_scan_access),
+    scan_id: str,
+    user: AuthenticatedUser = Depends(require_auth),
+    scan=Depends(require_scan_access),
     active_scans: dict = Depends(get_active_scans),
-    scan_store    = Depends(get_scan_store),
+    scan_store=Depends(get_scan_store),
 ):
     """
     Cancel a running scan. Already complete or failed scans cannot be cancelled.
@@ -856,14 +916,18 @@ async def cancel_scan(
     await scan_store.save_summary(scan)
 
     audit.info("SCAN_CANCELLED scan_id=%s user_id=%s", scan_id[:8], user.user_id[:8])
-    return {"scan_id": scan_id, "status": "cancelled", "message": "Scan has been cancelled."}
+    return {
+        "scan_id": scan_id,
+        "status": "cancelled",
+        "message": "Scan has been cancelled.",
+    }
 
 
 @router.post("/{scan_id}/recover", summary="Initiate tactical recovery for a scan")
 async def recover_scan(
-    scan_id:      str,
-    user:         AuthenticatedUser = Depends(require_auth),
-    scan          = Depends(require_scan_access),
+    scan_id: str,
+    user: AuthenticatedUser = Depends(require_auth),
+    scan=Depends(require_scan_access),
     active_scans: dict = Depends(get_active_scans),
 ):
     """
@@ -878,22 +942,26 @@ async def recover_scan(
         raise HTTPException(404, "Active orchestrator not found for this scan.")
 
     # Execute recovery logic on the orchestrator
-    logger.info("Recovery trigger requested for scan %s by user %s", scan_id[:8], user.user_id[:8])
+    logger.info(
+        "Recovery trigger requested for scan %s by user %s",
+        scan_id[:8],
+        user.user_id[:8],
+    )
     await task.orchestrator.recover()
 
     return {
-        "scan_id": scan_id, 
-        "status": "recovery_initiated", 
-        "message": "Tactical recovery initiated. Scanning should resume shortly."
+        "scan_id": scan_id,
+        "status": "recovery_initiated",
+        "message": "Tactical recovery initiated. Scanning should resume shortly.",
     }
 
 
 @router.delete("/{scan_id}", status_code=204, summary="Delete scan record")
 async def delete_scan(
-    scan_id:   str,
-    user:      AuthenticatedUser = Depends(require_auth),
-    scan       = Depends(require_scan_access),
-    scan_store = Depends(get_scan_store),
+    scan_id: str,
+    user: AuthenticatedUser = Depends(require_auth),
+    scan=Depends(require_scan_access),
+    scan_store=Depends(get_scan_store),
     active_scans: dict = Depends(get_active_scans),
 ):
     """
@@ -917,21 +985,22 @@ async def delete_scan(
 
 # ── Findings ───────────────────────────────────────────────────────────────────
 
+
 @router.get("/{scan_id}/findings", summary="List findings for a scan")
 async def list_findings(
-    scan_id:      str,
-    page:         PaginationParams = Depends(get_pagination),
-    severity:     Optional[str] = Query(None, description="Filter by severity"),
-    vuln_type:    Optional[str] = Query(None, description="Filter by vulnerability type"),
-    ea_only:      bool = Query(False, description="Only EA-relevant findings"),
+    scan_id: str,
+    page: PaginationParams = Depends(get_pagination),
+    severity: Optional[str] = Query(None, description="Filter by severity"),
+    vuln_type: Optional[str] = Query(None, description="Filter by vulnerability type"),
+    ea_only: bool = Query(False, description="Only EA-relevant findings"),
     payment_only: bool = Query(False, description="Only payment-related findings"),
-    min_cvss:     Optional[float] = Query(None, ge=0.0, le=10.0),
-    include_evidence:    bool = Query(False),
+    min_cvss: Optional[float] = Query(None, ge=0.0, le=10.0),
+    include_evidence: bool = Query(False),
     include_remediation: bool = Query(True),
-    sort:         str = Query("risk_priority", description="Sort field"),
-    user:         AuthenticatedUser = Depends(require_auth),
-    scan          = Depends(require_scan_access),
-    scan_store    = Depends(get_scan_store),
+    sort: str = Query("risk_priority", description="Sort field"),
+    user: AuthenticatedUser = Depends(require_auth),
+    scan=Depends(require_scan_access),
+    scan_store=Depends(get_scan_store),
 ):
     """
     Return findings for a scan with filtering, sorting, and pagination.
@@ -959,10 +1028,10 @@ async def list_findings(
 
     # Paginate
     total = len(filtered)
-    page_findings = filtered[page.offset: page.offset + page.limit]
+    page_findings = filtered[page.offset : page.offset + page.limit]
 
     return {
-        "scan_id":  scan_id,
+        "scan_id": scan_id,
         "findings": [
             f.to_dict(
                 include_evidence=include_evidence,
@@ -970,29 +1039,29 @@ async def list_findings(
             )
             for f in page_findings
         ],
-        "total":   total,
-        "page":    page.page,
-        "limit":   page.limit,
-        "pages":   (total + page.limit - 1) // page.limit if total else 0,
+        "total": total,
+        "page": page.page,
+        "limit": page.limit,
+        "pages": (total + page.limit - 1) // page.limit if total else 0,
         "filters": {
-            "severity":     severity,
-            "vuln_type":    vuln_type,
-            "ea_only":      ea_only,
+            "severity": severity,
+            "vuln_type": vuln_type,
+            "ea_only": ea_only,
             "payment_only": payment_only,
-            "min_cvss":     min_cvss,
+            "min_cvss": min_cvss,
         },
     }
 
 
 @router.get("/{scan_id}/findings/{finding_id}", summary="Get finding detail")
 async def get_finding(
-    scan_id:    str,
+    scan_id: str,
     finding_id: str,
-    include_evidence:    bool = Query(True),
+    include_evidence: bool = Query(True),
     include_remediation: bool = Query(True),
-    user:       AuthenticatedUser = Depends(require_auth),
-    scan        = Depends(require_scan_access),
-    scan_store  = Depends(get_scan_store),
+    user: AuthenticatedUser = Depends(require_auth),
+    scan=Depends(require_scan_access),
+    scan_store=Depends(get_scan_store),
 ):
     """
     Return a single finding with full evidence and remediation guide.
@@ -1004,7 +1073,9 @@ async def get_finding(
     finding = next((f for f in all_findings if f.id == finding_id), None)
 
     if finding is None:
-        raise HTTPException(404, f"Finding {finding_id!r} not found in scan {scan_id!r}.")
+        raise HTTPException(
+            404, f"Finding {finding_id!r} not found in scan {scan_id!r}."
+        )
 
     return finding.to_dict(
         include_evidence=include_evidence,
@@ -1014,12 +1085,12 @@ async def get_finding(
 
 @router.patch("/{scan_id}/findings/{finding_id}", summary="Update finding status")
 async def patch_finding(
-    scan_id:    str,
+    scan_id: str,
     finding_id: str,
-    body:       PatchFindingRequest,
-    user:       AuthenticatedUser = Depends(require_auth),
-    scan        = Depends(require_scan_access),
-    scan_store  = Depends(get_scan_store),
+    body: PatchFindingRequest,
+    user: AuthenticatedUser = Depends(require_auth),
+    scan=Depends(require_scan_access),
+    scan_store=Depends(get_scan_store),
 ):
     """
     Update finding remediation status or assignment.
@@ -1028,18 +1099,18 @@ async def patch_finding(
     """
     all_findings = await scan_store.load_findings(scan_id)
     finding_dict = next((f for f in all_findings if f.get("id") == finding_id), None)
-    
+
     if finding_dict is None:
         raise HTTPException(404, "Finding not found")
-        
+
     if body.remediation_status:
-            finding_dict["remediation_status"] = body.remediation_status
-            if body.remediation_status == "fixed":
-                finding_dict["fixed_at"] = datetime.now(timezone.utc).isoformat()
-            
+        finding_dict["remediation_status"] = body.remediation_status
+        if body.remediation_status == "fixed":
+            finding_dict["fixed_at"] = datetime.now(timezone.utc).isoformat()
+
     if body.assigned_to:
         finding_dict["assigned_to"] = body.assigned_to
-        
+
     scan.findings = all_findings
     await scan_store.save_findings(scan)
     return finding_dict
@@ -1047,14 +1118,15 @@ async def patch_finding(
 
 # ── Events ─────────────────────────────────────────────────────────────────────
 
+
 @router.get("/{scan_id}/events", summary="Get scan audit event log")
 async def get_scan_events(
-    scan_id:   str,
-    page:      PaginationParams = Depends(get_pagination),
-    level:     Optional[str] = Query(None, description="Filter by event level"),
-    user:      AuthenticatedUser = Depends(require_auth),
-    scan       = Depends(require_scan_access),
-    scan_store = Depends(get_scan_store),
+    scan_id: str,
+    page: PaginationParams = Depends(get_pagination),
+    level: Optional[str] = Query(None, description="Filter by event level"),
+    user: AuthenticatedUser = Depends(require_auth),
+    scan=Depends(require_scan_access),
+    scan_store=Depends(get_scan_store),
 ):
     """
     Return the immutable audit event log for a scan.
@@ -1065,30 +1137,33 @@ async def get_scan_events(
     events = await scan_store.load_events(scan_id)
 
     if level:
-        events = [e for e in events if getattr(e, "level", "info").lower() == level.lower()]
+        events = [
+            e for e in events if getattr(e, "level", "info").lower() == level.lower()
+        ]
 
     total = len(events)
-    page_events = events[page.offset: page.offset + page.limit]
+    page_events = events[page.offset : page.offset + page.limit]
 
     return {
         "scan_id": scan_id,
-        "events":  [e.to_dict() if hasattr(e, "to_dict") else e for e in page_events],
-        "total":   total,
-        "page":    page.page,
-        "limit":   page.limit,
+        "events": [e.to_dict() if hasattr(e, "to_dict") else e for e in page_events],
+        "total": total,
+        "page": page.page,
+        "limit": page.limit,
     }
 
 
 # ── Exports ────────────────────────────────────────────────────────────────────
 
+
 @router.get("/{scan_id}/export/csv", summary="Export findings as CSV")
 async def export_csv(
-    scan_id:   str,
-    severity:  Optional[str] = Query(None),
-    ea_only:   bool = Query(False),
-    user:      AuthenticatedUser = Depends(require_auth),
-    scan       = Depends(require_scan_access),
-    scan_store = Depends(get_scan_store),
+    scan_id: str,
+    severity: Optional[str] = Query(None),
+    ea_only: bool = Query(False),
+    user: AuthenticatedUser = Depends(require_auth),
+    scan=Depends(require_scan_access),
+    scan_store=Depends(get_scan_store),
 ):
     """
     Download all findings as a CSV file.
@@ -1103,35 +1178,50 @@ async def export_csv(
     writer = csv.writer(output)
 
     # Header row
-    writer.writerow([
-        "risk_priority", "severity", "cvss_score", "effective_cvss",
-        "vuln_type", "vuln_label", "url", "parameter",
-        "parameter_location", "confidence", "owasp_category",
-        "cwe_id", "ea_relevant", "affects_payments",
-        "discovered_at", "fingerprint",
-    ])
+    writer.writerow(
+        [
+            "risk_priority",
+            "severity",
+            "cvss_score",
+            "effective_cvss",
+            "vuln_type",
+            "vuln_label",
+            "url",
+            "parameter",
+            "parameter_location",
+            "confidence",
+            "owasp_category",
+            "cwe_id",
+            "ea_relevant",
+            "affects_payments",
+            "discovered_at",
+            "fingerprint",
+        ]
+    )
 
     for f in sorted_findings:
         row = getattr(f, "to_csv_row", lambda: {})()
         if isinstance(row, dict):
-            writer.writerow([
-                row.get("risk_priority", ""),
-                row.get("severity", ""),
-                row.get("cvss_score", ""),
-                row.get("effective_cvss", ""),
-                row.get("vuln_type", ""),
-                row.get("vuln_label", ""),
-                row.get("url", ""),
-                row.get("parameter_name", ""),
-                row.get("parameter_location", ""),
-                row.get("confidence", ""),
-                row.get("owasp_category", ""),
-                row.get("cwe_id", ""),
-                row.get("ea_relevant", ""),
-                row.get("affects_payments", ""),
-                row.get("discovered_at", ""),
-                row.get("fingerprint", ""),
-            ])
+            writer.writerow(
+                [
+                    row.get("risk_priority", ""),
+                    row.get("severity", ""),
+                    row.get("cvss_score", ""),
+                    row.get("effective_cvss", ""),
+                    row.get("vuln_type", ""),
+                    row.get("vuln_label", ""),
+                    row.get("url", ""),
+                    row.get("parameter_name", ""),
+                    row.get("parameter_location", ""),
+                    row.get("confidence", ""),
+                    row.get("owasp_category", ""),
+                    row.get("cwe_id", ""),
+                    row.get("ea_relevant", ""),
+                    row.get("affects_payments", ""),
+                    row.get("discovered_at", ""),
+                    row.get("fingerprint", ""),
+                ]
+            )
 
     output.seek(0)
     filename = f"vulnscout-{scan_id[:8]}-findings.csv"
@@ -1144,11 +1234,11 @@ async def export_csv(
 
 @router.get("/{scan_id}/export/json", summary="Export full scan as JSON")
 async def export_json(
-    scan_id:          str,
+    scan_id: str,
     include_evidence: bool = Query(False, description="Include raw HTTP evidence"),
-    user:             AuthenticatedUser = Depends(require_auth),
-    scan              = Depends(require_scan_access),
-    scan_store        = Depends(get_scan_store),
+    user: AuthenticatedUser = Depends(require_auth),
+    scan=Depends(require_scan_access),
+    scan_store=Depends(get_scan_store),
 ):
     """
     Download the complete scan record as JSON including all findings,
@@ -1158,7 +1248,7 @@ async def export_json(
     manageable. Set include_evidence=true for the full record.
     """
     findings = await scan_store.load_findings(scan_id)
-    events   = await scan_store.load_events(scan_id)
+    events = await scan_store.load_events(scan_id)
 
     scan_data = scan.to_full_dict(
         include_evidence=include_evidence,
@@ -1169,15 +1259,13 @@ async def export_json(
         f.to_dict(include_evidence=include_evidence, include_remediation=True)
         for f in findings
     ]
-    scan_data["events"] = [
-        e.to_dict() if hasattr(e, "to_dict") else e for e in events
-    ]
+    scan_data["events"] = [e.to_dict() if hasattr(e, "to_dict") else e for e in events]
     scan_data["export_meta"] = {
-        "exported_at":    datetime.now(timezone.utc).isoformat(),
-        "exported_by":    user.user_id[:8],
+        "exported_at": datetime.now(timezone.utc).isoformat(),
+        "exported_by": user.user_id[:8],
         "include_evidence": include_evidence,
-        "tool":           "VulnScout Pro",
-        "tool_version":   get_config().app.version,
+        "tool": "VulnScout Pro",
+        "tool_version": get_config().app.version,
     }
 
     filename = f"vulnscout-{scan_id[:8]}-full.json"
@@ -1190,26 +1278,32 @@ async def export_json(
 
 @router.get("/{scan_id}/export/logs", summary="Export audit events as TXT")
 async def export_logs(
-    scan_id:   str,
-    user:      AuthenticatedUser = Depends(require_auth),
-    scan       = Depends(require_scan_access),
-    scan_store = Depends(get_scan_store),
+    scan_id: str,
+    user: AuthenticatedUser = Depends(require_auth),
+    scan=Depends(require_scan_access),
+    scan_store=Depends(get_scan_store),
 ):
     """
     Download the complete immutable scan audit log as a raw text file.
     """
     events = await scan_store.load_events(scan_id)
-    
+
     output = io.StringIO()
     output.write(f"VULNSCOUT PRO — AUDIT EVENT LOG\n")
     output.write(f"SCAN_ID: {scan_id}\n")
     output.write(f"EXPORTED: {datetime.now(timezone.utc).isoformat()}Z\n")
-    output.write("="*80 + "\n\n")
+    output.write("=" * 80 + "\n\n")
 
     for e in events:
-        ts = e.timestamp.isoformat() if hasattr(e.timestamp, 'isoformat') else str(e.timestamp)
-        output.write(f"[{ts}] {e.level.upper():8} | {e.phase.upper():12} | {e.message}\n")
-    
+        ts = (
+            e.timestamp.isoformat()
+            if hasattr(e.timestamp, "isoformat")
+            else str(e.timestamp)
+        )
+        output.write(
+            f"[{ts}] {e.level.upper():8} | {e.phase.upper():12} | {e.message}\n"
+        )
+
     output.seek(0)
     filename = f"vulnscout-{scan_id[:8]}-audit.log"
     return StreamingResponse(
@@ -1221,17 +1315,20 @@ async def export_logs(
 
 @router.get("/{scan_id}/report", summary="Download scan report")
 async def get_scan_report(
-    scan_id:     str,
-    format:      str = Query("pdf", description="Report format (pdf, html, json, csv)"),
-    report_type: str = Query("technical", description="Report type (executive, technical, compliance)"),
-    user:        AuthenticatedUser = Depends(require_auth),
-    scan         = Depends(require_scan_access),
+    scan_id: str,
+    format: str = Query("pdf", description="Report format (pdf, html, json, csv)"),
+    report_type: str = Query(
+        "technical", description="Report type (executive, technical, compliance)"
+    ),
+    user: AuthenticatedUser = Depends(require_auth),
+    scan=Depends(require_scan_access),
 ):
     """
     Generate and download a professional vulnerability report.
     Supports PDF (default), HTML, JSON, and CSV formats.
     """
     from reporting.builder import ReportBuilder
+
     builder = ReportBuilder(scan)
     try:
         report_bytes = await builder.build(report_type=report_type, format=format)
@@ -1257,34 +1354,44 @@ async def get_scan_report(
 
 # ── Internal helpers ───────────────────────────────────────────────────────────
 
+
 def _filter_findings(
     findings: list,
-    severity:     Optional[str] = None,
-    vuln_type:    Optional[str] = None,
-    ea_only:      bool = False,
+    severity: Optional[str] = None,
+    vuln_type: Optional[str] = None,
+    ea_only: bool = False,
     payment_only: bool = False,
-    min_cvss:     Optional[float] = None,
+    min_cvss: Optional[float] = None,
 ) -> list:
     """Apply multi-dimensional filters to a findings list."""
     result = findings
 
     if severity:
-        _sev_order = {"critical": 4, "high": 3, "medium": 2, "low": 1, "informational": 0}
+        _sev_order = {
+            "critical": 4,
+            "high": 3,
+            "medium": 2,
+            "low": 1,
+            "informational": 0,
+        }
         min_rank = _sev_order.get(severity.lower(), 0)
         result = [
-            f for f in result
+            f
+            for f in result
             if _sev_order.get(getattr(f, "severity", "").lower(), -1) >= min_rank
         ]
 
     if vuln_type:
         result = [
-            f for f in result
+            f
+            for f in result
             if getattr(f, "vuln_type", "").lower() == vuln_type.lower()
         ]
 
     if ea_only:
         result = [
-            f for f in result
+            f
+            for f in result
             if getattr(getattr(f, "ea_context", None), "ea_relevant", False)
         ]
 
@@ -1301,14 +1408,16 @@ def _sort_findings(findings: list, sort: str) -> list:
     """Sort findings list by the given field name."""
     _SORT_KEYS: Dict[str, Any] = {
         "risk_priority": lambda f: getattr(f, "risk_priority", 9999),
-        "cvss_score":    lambda f: -(getattr(f, "cvss_score", 0.0)),
+        "cvss_score": lambda f: -(getattr(f, "cvss_score", 0.0)),
         "effective_cvss": lambda f: -(getattr(f, "effective_cvss", 0.0)),
-        "severity":      lambda f: -{"critical": 4, "high": 3, "medium": 2,
-                                      "low": 1, "informational": 0}.get(
-                                      getattr(f, "severity", ""), 0),
-        "vuln_type":     lambda f: getattr(f, "vuln_type", ""),
-        "url":           lambda f: getattr(f, "url", ""),
-        "confidence":    lambda f: -(getattr(f, "confidence", 0.0)),
+        "severity": lambda f: (
+            -{"critical": 4, "high": 3, "medium": 2, "low": 1, "informational": 0}.get(
+                getattr(f, "severity", ""), 0
+            )
+        ),
+        "vuln_type": lambda f: getattr(f, "vuln_type", ""),
+        "url": lambda f: getattr(f, "url", ""),
+        "confidence": lambda f: -(getattr(f, "confidence", 0.0)),
         "discovered_at": lambda f: getattr(f, "discovered_at", ""),
     }
     key_fn = _SORT_KEYS.get(sort, _SORT_KEYS["risk_priority"])
@@ -1320,22 +1429,23 @@ def _sort_findings(findings: list, sort: str) -> list:
 
 # ── Compatibility Aliases for No-JS Forms ─────────────────────────────────────
 
+
 @router.post("/new", summary="Submit a new scan (Form alias)")
 async def submit_scan_form(
-    request:          Request,
-    target_url:       str = Form(...),
-    authorised_by:    str = Form(""),
+    request: Request,
+    target_url: str = Form(...),
+    authorised_by: str = Form(""),
     authorisation_notes: str = Form(""),
-    crawl_depth:      int = Form(3),
-    rate_limit_rps:   float = Form(2.0),
-    enabled_checks:   List[str] = Form(default_factory=list),
-    auth_type:        str = Form("none"),
-    auth_username:    Optional[str] = Form(None),
-    auth_password:    Optional[str] = Form(None),
-    auth_token:       Optional[str] = Form(None),
-    user:             AuthenticatedUser = Depends(check_scan_rate_limit),
-    scan_store        = Depends(get_scan_store),
-    detector_registry = Depends(get_detector_registry),
+    crawl_depth: int = Form(3),
+    rate_limit_rps: float = Form(2.0),
+    enabled_checks: List[str] = Form(default_factory=list),
+    auth_type: str = Form("none"),
+    auth_username: Optional[str] = Form(None),
+    auth_password: Optional[str] = Form(None),
+    auth_token: Optional[str] = Form(None),
+    user: AuthenticatedUser = Depends(check_scan_rate_limit),
+    scan_store=Depends(get_scan_store),
+    detector_registry=Depends(get_detector_registry),
     active_scans: dict = Depends(get_active_scans),
 ):
     """Bridges the HTML form submission to the internal create_scan logic."""
@@ -1352,7 +1462,9 @@ async def submit_scan_form(
             auth_password=auth_password,
             auth_token=auth_token,
         )
-        res = await create_scan(body, request, user, scan_store, detector_registry, active_scans)
+        res = await create_scan(
+            body, request, user, scan_store, detector_registry, active_scans
+        )
         return RedirectResponse(url=f"/scans/{res.scan_id}", status_code=303)
     except Exception as exc:
         logger.warning("Scan form submission failed: %s", exc)
@@ -1363,25 +1475,28 @@ async def submit_scan_form(
 
 @router.post("/{scan_id}/stop", summary="Stop a running scan (Form alias)")
 async def stop_scan_form(
-    scan_id:   str,
-    user:      AuthenticatedUser = Depends(require_auth),
-    scan       = Depends(require_scan_access),
+    scan_id: str,
+    user: AuthenticatedUser = Depends(require_auth),
+    scan=Depends(require_scan_access),
     active_scans: dict = Depends(get_active_scans),
-    scan_store = Depends(get_scan_store),
+    scan_store=Depends(get_scan_store),
 ):
     """Alias for cancel_scan that redirects back to detail page."""
     await cancel_scan(scan_id, user, scan, active_scans, scan_store)
     return RedirectResponse(url=f"/scans/{scan_id}", status_code=303)
 
 
-@router.post("/{scan_id}/findings/{finding_id}/status", summary="Update finding status (Form alias)")
+@router.post(
+    "/{scan_id}/findings/{finding_id}/status",
+    summary="Update finding status (Form alias)",
+)
 async def update_finding_status_form(
-    scan_id:    str,
+    scan_id: str,
     finding_id: str,
-    status:     str = Form(...),
-    user:       AuthenticatedUser = Depends(require_auth),
-    scan        = Depends(require_scan_access),
-    scan_store  = Depends(get_scan_store),
+    status: str = Form(...),
+    user: AuthenticatedUser = Depends(require_auth),
+    scan=Depends(require_scan_access),
+    scan_store=Depends(get_scan_store),
 ):
     """Alias for patch_finding that redirects back to detail page."""
     body = PatchFindingRequest(remediation_status=status)
