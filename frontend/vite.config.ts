@@ -7,12 +7,12 @@ const apiTarget = process.env.VITE_API_URL?.includes('http')
   : 'http://127.0.0.1:8000'
 
 export default defineConfig({
+  base: "/vulnscout_pro/",
   plugins: [react()],
   build: {
     outDir: 'dist',
     emptyOutDir: true,
   },
-  base: '/',
   server: {
     port: 3000,
     proxy: {
