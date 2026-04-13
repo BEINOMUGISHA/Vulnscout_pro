@@ -65,6 +65,15 @@ class LoginResponse(BaseModel):
     totp_required: bool = False
     message: str = "Success"
 
+
+class PasswordResetRequest(BaseModel):
+    email: str = Field(..., min_length=5, max_length=254)
+
+
+class PasswordResetCompleteRequest(BaseModel):
+    token: str = Field(..., min_length=20)
+    password: str = Field(..., min_length=8, max_length=256)
+
 # ── Auth Header Helper ─────────────────────────────────────────────────────────
 
 async def _get_token_from_header(
@@ -156,6 +165,7 @@ async def signup(req: SignupRequest, request: Request):
         return {
             "message": "User registered successfully. Scan the QR code to finish setup.",
             "user_id": user.user_id,
+            "login_token": await session_store.create_token(user.user_id, ttl_seconds=600),
             "totp_secret": enrollment.secret,
             "provisioning_uri": enrollment.provisioning_uri,
             "qr_svg": svg
@@ -230,6 +240,41 @@ async def logout(request: Request, token: str = Depends(_get_token_from_header))
     await session_store.invalidate_token(token)
     audit.info("User logged out")
     return {"message": "Logged out successfully"}
+
+
+@router.post("/password/reset-request", tags=["auth"])
+async def password_reset_request(req: PasswordResetRequest, request: Request):
+    """
+    Step 1: Request a password reset. Returns a token (simulates email dispatch).
+    """
+    auth_manager = request.app.state.auth
+    token = await auth_manager.request_password_reset(
+        email=req.email,
+        ip_address=request.client.host if request.client else "127.0.0.1"
+    )
+    # Simulation: always return success to prevent enumeration, but include token for dev
+    return {
+        "message": "Operational override initiated. Check secure comms for reset token.",
+        "dev_token": token if request.app.state.config.app.debug else None
+    }
+
+
+@router.post("/password/reset-complete", tags=["auth"])
+async def password_reset_complete(req: PasswordResetCompleteRequest, request: Request):
+    """
+    Step 2: Complete password reset using the token.
+    """
+    auth_manager = request.app.state.auth
+    success = await auth_manager.complete_password_reset(
+        raw_token=req.token,
+        new_password=req.password
+    )
+    if not success:
+        raise HTTPException(
+            status_code=400, 
+            detail="Override sequence expired or invalid. Authorization denied."
+        )
+    return {"message": "Access restored. New credentials synchronized."}
 
 @router.post("/dev-login", response_model=TokenResponse, tags=["auth"])
 async def dev_login(request: Request) -> TokenResponse:

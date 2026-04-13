@@ -50,7 +50,7 @@ from fastapi import (
     Response,
 )
 from fastapi.responses import JSONResponse, StreamingResponse, RedirectResponse
-from pydantic import BaseModel, Field, validator, root_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from api.dependencies import (
     AuthenticatedUser,
@@ -120,14 +120,14 @@ class ScanRequest(BaseModel):
     report_type: str = Field("technical", pattern="^(executive|technical|compliance)$")
     report_prepared_for: str = Field("", max_length=200)
 
-    @validator("target_url")
+    @field_validator("target_url")
     @classmethod
     def validate_target_url(cls, v):
         if v and not v.startswith(("http://", "https://")):
             raise ValueError("target_url must start with http:// or https://")
         return v
 
-    @validator("enabled_checks")
+    @field_validator("enabled_checks")
     @classmethod
     def validate_check_names(cls, v):
         valid = {
@@ -151,11 +151,11 @@ class ScanRequest(BaseModel):
                 raise ValueError(f"Unknown check: {item!r}. Valid: {sorted(valid)}")
         return v
 
-    @root_validator
-    def require_target(cls, values):
-        if not values.get("target_url") and not values.get("target_id"):
+    @model_validator(mode="after")
+    def require_target(self) -> ScanRequest:
+        if not self.target_url and not self.target_id:
             raise ValueError("Either target_url or target_id must be provided.")
-        return values
+        return self
 
 
 class ScanResponse(BaseModel):

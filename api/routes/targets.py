@@ -26,7 +26,7 @@ from datetime import datetime, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 from api.dependencies import (
     AuthenticatedUser,
@@ -91,14 +91,14 @@ class CreateTargetRequest(BaseModel):
     scan_config: ScanConfigRequest | None = None
     auth: AuthConfigRequest | None = None
 
-    @validator("url")
+    @field_validator("url")
     @classmethod
     def validate_url_format(cls, v):
         if not v.startswith(("http://", "https://")):
             raise ValueError("URL must start with http:// or https://")
         return v.rstrip("/")
 
-    @validator("industry")
+    @field_validator("industry")
     @classmethod
     def validate_industry(cls, v):
         valid = {

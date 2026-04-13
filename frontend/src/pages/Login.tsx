@@ -8,11 +8,13 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
 
   const [mode, setMode] = useState<'login' | 'register'>('login');
-  const [step, setStep] = useState<'credentials' | 'enroll' | 'totp' | 'verify_email'>('credentials');
+  const [step, setStep] = useState<'credentials' | 'enroll' | 'totp' | 'verify_email' | 'forgot_password' | 'reset_password'>('credentials');
   
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [resetToken, setResetToken] = useState('');
   
   const [totpCode, setTotpCode] = useState('');
   const [factorId, setFactorId] = useState('');
@@ -25,9 +27,12 @@ const Login: React.FC = () => {
 
   const formatError = (err: any): string => {
     if (!err) return '';
-    if (typeof err === 'string') return err.toUpperCase();
-    if (err.message) return err.message.toUpperCase();
-    return 'UNSPECIFIED OPERATIONAL FAILURE.';
+    let msg = '';
+    if (typeof err === 'string') msg = err;
+    else if (err.message) msg = typeof err.message === 'string' ? err.message : JSON.stringify(err.message);
+    else msg = 'NETWORK OPERATIONAL FAILURE.';
+    
+    return msg.toUpperCase();
   };
 
   const handleCredentialsSubmit = async (e: React.FormEvent) => {
@@ -36,14 +41,14 @@ const Login: React.FC = () => {
     setError(null);
     try {
       if (mode === 'register') {
-        const { data, error: signUpError } = await authApi.signup({
+        const { data } = await authApi.signup({
           email,
           password,
           name,
         });
-        if (signUpError) throw signUpError;
         
         if (data?.qr_svg) {
+          if (data.login_token) localStorage.setItem('login_token', data.login_token);
           setQrCode(data.qr_svg);
           setTotpSecret(data.totp_secret);
           setStep('enroll');
@@ -51,11 +56,10 @@ const Login: React.FC = () => {
           setStep('verify_email');
         }
       } else {
-        const { data, error: signInError } = await authApi.login({
+        const { data } = await authApi.login({
           email,
           password,
         });
-        if (signInError) throw signInError;
 
         if (data?.totp_required && data.login_token) {
           localStorage.setItem('login_token', data.login_token);
@@ -79,18 +83,49 @@ const Login: React.FC = () => {
     setError(null);
     try {
       const loginToken = localStorage.getItem('login_token') || '';
-      const { data, error } = await authApi.verifyTotp({
+      const { data } = await authApi.verifyTotp({
         login_token: loginToken,
         code: totpCode,
       });
-      
-      if (error) throw error;
       
       if (data?.access_token) {
         localStorage.setItem('access_token', data.access_token);
         localStorage.removeItem('login_token');
         navigate('/dashboard');
       }
+    } catch (err: any) {
+      setError(formatError(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    try {
+      const { data } = await authApi.requestReset(email);
+      setStep('reset_password');
+    } catch (err: any) {
+      setError(formatError(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetComplete = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password !== confirmPassword) {
+       setError("CREDENTIAL MISMATCH. RE-ENTER PASSWORDS.");
+       return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const { data } = await authApi.completeReset(resetToken, password);
+      setMode('login');
+      setStep('credentials');
     } catch (err: any) {
       setError(formatError(err));
     } finally {
@@ -158,7 +193,7 @@ const Login: React.FC = () => {
           </AnimatePresence>
 
           <AnimatePresence mode="wait">
-            {step === 'credentials' ? (
+            {step === 'credentials' ?
               <motion.form 
                 key="creds"
                 initial={{ opacity: 0, x: -20 }}
@@ -206,7 +241,7 @@ const Login: React.FC = () => {
                 <div className="space-y-2">
                   <div className="flex justify-between px-1">
                     <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Access Key (Password)</label>
-                    {mode === 'login' && <button type="button" className="text-[10px] font-black uppercase text-primary hover:underline">Revoke Access</button>}
+                    {mode === 'login' && <button type="button" onClick={() => setStep('forgot_password')} className="text-[10px] font-black uppercase text-primary hover:underline">Revoke Access</button>}
                   </div>
                   <div className="relative group">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" size={18} />
@@ -248,7 +283,7 @@ const Login: React.FC = () => {
                 </p>
               </motion.form>
 
-            ) : step === 'verify_email' ? (
+            : step === 'verify_email' ?
               <motion.div 
                 key="verify"
                 initial={{ opacity: 0, x: 20 }}
@@ -274,7 +309,7 @@ const Login: React.FC = () => {
                 </button>
               </motion.div>
 
-            ) : step === 'enroll' ? (
+            : step === 'enroll' ?
               <motion.form 
                 key="enroll"
                 initial={{ opacity: 0, x: 20 }}
@@ -331,7 +366,7 @@ const Login: React.FC = () => {
                 </button>
               </motion.form>
 
-            ) : (
+            : step === 'totp' ?
               <motion.form 
                 key="totp"
                 initial={{ opacity: 0, x: 20 }}
@@ -368,7 +403,118 @@ const Login: React.FC = () => {
                   Synchronize Sequence
                 </button>
               </motion.form>
-            )}
+
+            : step === 'forgot_password' ?
+              <motion.form 
+                key="forgot"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                onSubmit={handleResetRequest} 
+                className="space-y-6"
+              >
+                <div className="text-center mb-8">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-[20px] bg-primary/10 text-primary mb-4 border border-primary/20">
+                    <ShieldAlert size={32} />
+                  </div>
+                  <h2 className="text-sm font-black text-white uppercase tracking-widest">Emergency Override</h2>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-2">Enter your identity protocol (Email) to initiate credential revocation.</p>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="relative group">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full pl-12 pr-4 py-4 bg-card/60 border border-border rounded-2xl focus:border-primary outline-none transition-all font-mono text-sm uppercase tracking-tight"
+                      placeholder="EMAIL"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-primary hover:bg-primary/90 text-white font-black py-4 rounded-2xl transition-all shadow-xl neon-blue uppercase tracking-[0.2em] text-sm flex items-center justify-center gap-3 disabled:opacity-50"
+                >
+                  {loading ? <Zap className="animate-spin" size={20} /> : <ArrowRight size={20} />}
+                  Initiate Revocation
+                </button>
+                
+                <button 
+                  type="button" 
+                  onClick={() => setStep('credentials')}
+                  className="w-full text-[10px] font-black uppercase text-muted-foreground hover:text-white transition-colors"
+                >
+                  CANCEL REQUEST
+                </button>
+              </motion.form>
+
+            :
+              <motion.form 
+                key="reset"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                onSubmit={handleResetComplete} 
+                className="space-y-5"
+              >
+                <div className="text-center mb-6">
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-[16px] bg-primary/10 text-primary mb-2 border border-primary/20">
+                    <KeyRound size={24} />
+                  </div>
+                  <h2 className="text-sm font-black text-white uppercase tracking-widest">Synchronize New Key</h2>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Override Token</label>
+                  <input
+                    type="text"
+                    required
+                    value={resetToken}
+                    onChange={(e) => setResetToken(e.target.value)}
+                    className="w-full px-4 py-3 bg-card/60 border border-border rounded-xl focus:border-primary outline-none transition-all font-mono text-xs text-primary text-center tracking-[0.2em]"
+                    placeholder="TOKEN_SEQUENCE"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">New Access Key</label>
+                  <input
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full px-4 py-3 bg-card/60 border border-border rounded-xl focus:border-primary outline-none transition-all font-mono text-sm tracking-[0.3em]"
+                    placeholder="••••••••"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Confirm Key</label>
+                  <input
+                    type="password"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full px-4 py-3 bg-card/60 border border-border rounded-xl focus:border-primary outline-none transition-all font-mono text-sm tracking-[0.3em]"
+                    placeholder="••••••••"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full mt-4 bg-success hover:bg-success/90 text-black font-black py-4 rounded-xl transition-all shadow-xl neon-green uppercase tracking-[0.2em] text-sm flex items-center justify-center gap-3 disabled:opacity-50"
+                >
+                  {loading ? <Zap className="animate-spin" size={20} /> : <ShieldCheck size={20} />}
+                  Replace Authorization
+                </button>
+              </motion.form>
+            }
           </AnimatePresence>
         </div>
 

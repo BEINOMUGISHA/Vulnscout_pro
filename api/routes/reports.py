@@ -39,7 +39,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 from api.dependencies import (
     AuthenticatedUser,
@@ -84,7 +84,7 @@ class GenerateReportRequest(BaseModel):
         description="Override the auto-generated executive summary text",
     )
 
-    @validator("formats")
+    @field_validator("formats")
     @classmethod
     def validate_format(cls, v):
         valid = {"pdf", "json", "csv", "html", "sarif"}
