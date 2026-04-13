@@ -16,7 +16,7 @@ services:
       - key: VULNSCOUT_AI_ENABLED
         value: "false"
       - key: CORS_ORIGINS
-        value: "[\"https://beinomugisha.github.io\"]"
+        value: "https://beinomugisha.github.io"
       # Add your Supabase/DB URL here:
       # - key: DATABASE_URL
       #   sync: false

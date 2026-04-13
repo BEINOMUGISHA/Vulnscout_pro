@@ -10,15 +10,15 @@ python-dotenv==1.0.0
 pyjwt[crypto]==2.8.0
 passlib[bcrypt]==1.7.4
 xhtml2pdf==0.2.11
-weasyprint==60.2
+# weasyprint==60.2  # Not used - xhtml2pdf handles PDF generation
 rich==13.7.0
 structlog==24.1.0
 pyyaml==6.0.1
 typer[all]==0.9.0
 shellingham==1.5.4
 
-# Enterprise / Pro Features
-playwright==1.41.0
+# Enterprise / Pro Features (disabled for Render deployment)
+# playwright==1.41.0  # Requires browser binaries - use simulation fallback
 pyotp==2.9.0
 qrcode==7.4.2
 google-generativeai==0.3.2
