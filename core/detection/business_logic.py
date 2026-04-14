@@ -56,14 +56,14 @@ class BusinessLogicDetector(BaseDetector):
         
         # 3. Transaction/Flow Integrity
         findings.extend(await self._check_parameter_pollution(target, crawl_result, injector))
-169: 
-170:         # 4. Workflow Bypass
-171:         findings.extend(await self._check_workflow_bypass(target, crawl_result, injector))
-172: 
-173:         return findings
-174: 
-175:     async def _check_price_manipulation(self, target, crawl_result, injector) -> List[Finding]:
-176:         findings = []
+
+        # 4. Workflow Bypass
+        findings.extend(await self._check_workflow_bypass(target, crawl_result, injector))
+
+        return findings
+
+    async def _check_price_manipulation(self, target, crawl_result, injector) -> List[Finding]:
+        findings = []
         price_params = ["price", "amount", "total", "cost", "unit_price", "grand_total", "fee"]
         
         for param in crawl_result.parameters:

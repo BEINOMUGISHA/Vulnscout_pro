@@ -165,3 +165,8 @@ class BrokenAuthDetector(BaseDetector):
                 evidence=evidence,
             )
         ]
+
+    @property
+    def payloads(self) -> List[Payload]:
+        # Passive detector; no specific injection payloads required
+        return []
