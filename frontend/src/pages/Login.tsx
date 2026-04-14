@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShieldAlert, AlertCircle, Mail, Lock, Zap, ArrowRight, ShieldCheck, KeyRound, User, Copy, CheckCircle2 } from 'lucide-react';
 import { authApi } from '../api/client';
+import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
+  const { refreshUser } = useAuth();
 
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [step, setStep] = useState<'credentials' | 'enroll' | 'totp' | 'verify_email' | 'forgot_password' | 'reset_password'>('credentials');
@@ -67,7 +69,14 @@ const Login: React.FC = () => {
         } else if (data?.access_token) {
           localStorage.setItem('access_token', data.access_token);
           if (data.refresh_token) localStorage.setItem('refresh_token', data.refresh_token);
-          navigate('/dashboard');
+          
+          if (typeof refreshUser === 'function') {
+            await refreshUser();
+            navigate('/dashboard');
+          } else {
+            window.location.hash = '#/dashboard';
+            window.location.reload();
+          }
         }
       }
     } catch (err: any) {
@@ -91,7 +100,14 @@ const Login: React.FC = () => {
       if (data?.access_token) {
         localStorage.setItem('access_token', data.access_token);
         localStorage.removeItem('login_token');
-        navigate('/dashboard');
+        
+        if (typeof refreshUser === 'function') {
+          await refreshUser();
+          navigate('/dashboard');
+        } else {
+          window.location.hash = '#/dashboard';
+          window.location.reload();
+        }
       }
     } catch (err: any) {
       setError(formatError(err));

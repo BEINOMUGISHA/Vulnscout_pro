@@ -24,10 +24,9 @@ api.interceptors.response.use(
     
     if (status === 401) {
       localStorage.removeItem('access_token');
-      const base = import.meta.env.BASE_URL || '/';
-      const currentPath = window.location.pathname;
-      if (!currentPath.includes('/login')) {
-        window.location.href = `${base}login`.replace(/\/+/g, '/');
+      const currentHash = window.location.hash;
+      if (!currentHash.includes('#/login')) {
+        window.location.hash = '#/login';
       }
     }
     

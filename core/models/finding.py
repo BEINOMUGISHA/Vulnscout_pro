@@ -82,6 +82,7 @@ class VulnType:
     SENSITIVE_DATA  = "sensitive_data"
     OPEN_REDIRECT   = "open_redirect"
     CSRF            = "csrf"
+    IPN_FORGERY     = "ipn_forgery"
 
     UNKNOWN             = "unknown"
 
@@ -128,6 +129,7 @@ class VulnType:
         "workflow_bypass": "Business Logic: Workflow Bypass",
         "ssti": "Server-Side Template Injection",
         "command_injection": "OS Command Injection",
+        "ipn_forgery": "IPN / Payment Callback Forgery",
     }
 
     @classmethod
@@ -458,6 +460,7 @@ _OWASP_MAP: Dict[str, str] = {
     "parameter_pollution":   "A03:2021 – Injection",
     "ssti":                  "A03:2021 – Injection",
     "command_injection":     "A03:2021 – Injection",
+    "ipn_forgery":           "A04:2021 – Insecure Design",
 }
 
 

@@ -2,7 +2,7 @@ services:
   - type: web
     name: vulnscout-api
     env: python
-    buildCommand: pip install -r requirements/prod.txt
+    buildCommand: pip install -r requirements.txt
     startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: VULNSCOUT_ENVIRONMENT
@@ -11,6 +11,8 @@ services:
         value: "false"
       - key: VULNSCOUT_SECRET_KEY
         generateValue: true
+      - key: PYTHON_VERSION
+        value: "3.12.0"
       - key: VULNSCOUT_SCAN_ALLOW_ALL_TARGETS
         value: "false"
       - key: VULNSCOUT_AI_ENABLED

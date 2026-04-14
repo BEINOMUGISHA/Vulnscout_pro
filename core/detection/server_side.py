@@ -10,15 +10,15 @@ Responsibilities:
 from __future__ import annotations
 
 import logging
-from typing import List
+import uuid
+from typing import List, Optional
 
 from core.detection.base_detector import (
     BaseDetector,
     DetectorMeta,
     Payload,
-    DetectionHit,
 )
-from core.models.finding import Severity, VulnType
+from core.models.finding import Severity, VulnType, Finding, FindingEvidence
 
 logger = logging.getLogger(__name__)
 
@@ -39,19 +39,19 @@ class ServerSideDetector(BaseDetector):
     def payloads(self) -> List[Payload]:
         return []
 
-    async def detect(self, target, crawl_result, injector) -> List[DetectionHit]:
-        hits = []
+    async def detect(self, target, crawl_result, injector) -> List[Finding]:
+        findings = []
         
         # 1. SSTI Checks
-        hits.extend(await self._check_ssti(target, crawl_result, injector))
+        findings.extend(await self._check_ssti(target, crawl_result, injector))
         
         # 2. OS Command Injection Checks
-        hits.extend(await self._check_command_injection(target, crawl_result, injector))
+        findings.extend(await self._check_command_injection(target, crawl_result, injector))
 
-        return hits
+        return findings
 
-    async def _check_ssti(self, target, crawl_result, injector) -> List[DetectionHit]:
-        hits = []
+    async def _check_ssti(self, target, crawl_result, injector) -> List[Finding]:
+        findings = []
         # Mathematical polyglot payloads for different template engines
         # {{7*7}} -> 49 (Jinja2, Twig)
         # ${7*7} -> 49 (Mako, FreeMarker)
@@ -81,21 +81,31 @@ class ServerSideDetector(BaseDetector):
                 
                 # Check for successful evaluation and NO reflection of the actual payload chars like '*'
                 if expected in resp.body and payload_val not in resp.body:
-                    hits.append(
-                        DetectionHit(
-                            detector_id=self.meta.detector_id,
-                            vuln_type=VulnType.SSTI,
-                            severity=Severity.CRITICAL,
-                            confidence=0.9,
-                            evidence=f"Template injection detected ({engine}). Payload '{payload_val}' evaluated to '{expected}'.",
+                    evidence = FindingEvidence(
+                        request_method=crawl_result.method,
+                        request_url=crawl_result.url,
+                        injected_parameter=param.name,
+                        injected_payload=payload_val,
+                        response_status=resp.status_code,
+                        response_body_excerpt=resp.body[:500],
+                        matched_pattern=f"SSTI detected ({engine}): '{payload_val}' evaluated to '{expected}'",
+                    )
+                    findings.append(
+                        Finding(
+                            id=str(uuid.uuid4()),
                             url=crawl_result.url,
-                            parameter=param.name,
+                            parameter_name=param.name,
+                            parameter_location=param.location,
+                            vuln_type=VulnType.SSTI,
+                            cvss_vector="CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H", # 9.8
+                            confidence=0.9,
+                            evidence=evidence,
                         )
                     )
-        return hits
+        return findings
 
-    async def _check_command_injection(self, target, crawl_result, injector) -> List[DetectionHit]:
-        hits = []
+    async def _check_command_injection(self, target, crawl_result, injector) -> List[Finding]:
+        findings = []
         # Time-based and error-based command injection payloads
         cmd_payloads = [
             ("| sleep 10", "time"),
@@ -129,28 +139,48 @@ class ServerSideDetector(BaseDetector):
                 
                 # Time-based check
                 if type_check == "time" and duration >= 9.5: # Allow for network latency
-                    hits.append(
-                        DetectionHit(
-                            detector_id=self.meta.id,
-                            vuln_type="command_injection",
-                            severity=Severity.CRITICAL,
-                            confidence=0.8,
-                            evidence=f"Time-based OS command injection detected. Payload '{payload_val}' caused {duration:.1f}s delay.",
+                    evidence = FindingEvidence(
+                        request_method=crawl_result.method,
+                        request_url=crawl_result.url,
+                        injected_parameter=param.name,
+                        injected_payload=payload_val,
+                        response_status=resp.status_code,
+                        timing_delta_ms=duration * 1000,
+                        matched_pattern=f"Time-based command injection detected",
+                    )
+                    findings.append(
+                        Finding(
+                            id=str(uuid.uuid4()),
                             url=crawl_result.url,
-                            parameter=param.name,
+                            parameter_name=param.name,
+                            parameter_location=param.location,
+                            vuln_type=VulnType.COMMAND_INJECTION,
+                            cvss_vector="CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H", # 9.8
+                            confidence=0.8,
+                            evidence=evidence,
                         )
                     )
                 # Reflection-based check (e.g., id output)
                 elif type_check == "uid=" and "uid=" in resp.body and "gid=" in resp.body:
-                    hits.append(
-                        DetectionHit(
-                            detector_id=self.meta.id,
-                            vuln_type="command_injection",
-                            severity=Severity.CRITICAL,
-                            confidence=1.0,
-                            evidence=f"Reflected OS command injection detected. Payload '{payload_val}' returned 'id' output.",
+                    evidence = FindingEvidence(
+                        request_method=crawl_result.method,
+                        request_url=crawl_result.url,
+                        injected_parameter=param.name,
+                        injected_payload=payload_val,
+                        response_status=resp.status_code,
+                        response_body_excerpt=resp.body[:500],
+                        matched_pattern=f"Reflected command injection detected",
+                    )
+                    findings.append(
+                        Finding(
+                            id=str(uuid.uuid4()),
                             url=crawl_result.url,
-                            parameter=param.name,
+                            parameter_name=param.name,
+                            parameter_location=param.location,
+                            vuln_type=VulnType.COMMAND_INJECTION,
+                            cvss_vector="CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H", # 9.8
+                            confidence=1.0,
+                            evidence=evidence,
                         )
                     )
-        return hits
+        return findings
